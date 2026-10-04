@@ -1,0 +1,126 @@
+[
+  {
+    "key": "atithi",
+    "name": "Atithi",
+    "location": "Scarborough, Ontario",
+    "kind": "Restaurant construction",
+    "title": "Warmth, from the first step inside.",
+    "intro": "A restaurant interior that brings seating, service and kitchen infrastructure together around a welcoming dining experience.",
+    "scope": [
+      "Civil and structural modifications",
+      "Interior detailing and furniture layout",
+      "Kitchen infrastructure",
+      "Feature walls and lighting"
+    ],
+    "narrative": "The work brought together structural modifications and interior details. Seating layout, feature walls, lighting and kitchen infrastructure were considered together, connecting the dining room to the practical work behind it.",
+    "detail": "Timber wall finishes, upholstered booths and a defined service counter give the completed interior a clear material rhythm. The photographs show how seating and service share the space.",
+    "proof": "Interior detailing · Seating layout · Kitchen coordination",
+    "alts": [
+      "Atithi dining room with timber wall finishes, upholstered booths and a green-fronted service counter.",
+      "Atithi service counter and seating beneath ceiling spotlights.",
+      "A row of black upholstered booths against timber wall finishes at Atithi.",
+      "Atithi service area with a glass counter, timber finishes and wall artwork."
+    ],
+    "caps": [
+      "The completed dining room, with service and seating in one view.",
+      "A defined arrival and service area.",
+      "Booth seating and timber wall detailing.",
+      "The service counter and interior finishes."
+    ],
+    "slug": "atithi-scarborough-canada",
+    "source": "https://lifebuildcanada.ca/atithi-scarborough-canada/"
+  },
+  {
+    "key": "jay-etobicoke",
+    "name": "Jay Bhavani",
+    "location": "Etobicoke, Ontario",
+    "kind": "Franchise buildout",
+    "title": "One brand. Every detail connected.",
+    "intro": "An end-to-end franchise buildout connecting a bright dining room, branded interiors, the service area and a commercial kitchen.",
+    "scope": [
+      "Civil work",
+      "Custom interiors and brand integration",
+      "Service area design",
+      "Commercial kitchen installation"
+    ],
+    "narrative": "The buildout connected civil work, custom interiors, the service area and kitchen installation. The space translates the franchise identity into a working restaurant, from the customer-facing finishes to the preparation area.",
+    "detail": "Blue seating, graphic wall panels and a geometric ceiling feature tie the front of house together. The kitchen photograph documents the stainless-steel work surfaces and cooking equipment behind the service area.",
+    "proof": "Franchise interiors · Service planning · Kitchen installation",
+    "alts": [
+      "Jay Bhavani Etobicoke dining room with blue seating, branded wall graphics and a geometric ceiling feature.",
+      "The street-facing exterior and entrance of Jay Bhavani Etobicoke.",
+      "Blue dining chairs, booth seating and branded wall graphics at Jay Bhavani Etobicoke.",
+      "Commercial kitchen at Jay Bhavani Etobicoke with stainless-steel work surfaces and cooking equipment."
+    ],
+    "caps": [
+      "Brand, seating and ceiling details brought into one room.",
+      "The completed street-facing entrance.",
+      "The franchise identity carried through the dining area.",
+      "The commercial kitchen behind the guest experience."
+    ],
+    "slug": "jay-bhavani-etobicoke-canada",
+    "source": "https://lifebuildcanada.ca/jay-bhavani-etobicoke-canada/"
+  },
+  {
+    "key": "jay-windsor",
+    "name": "Jay Bhavani",
+    "location": "Windsor, Ontario",
+    "kind": "Franchise construction",
+    "title": "The guest experience has a working side.",
+    "intro": "A fast-casual restaurant bringing space planning, kitchen flow and a distinct franchise identity into a compact service environment.",
+    "scope": [
+      "Space planning",
+      "Kitchen flow and service coordination",
+      "Brand-specific interior décor",
+      "Franchise construction"
+    ],
+    "narrative": "Franchise construction brought space planning, kitchen flow and brand-specific décor together. The layout connects the order counter and dining area with the working kitchen, while keeping the franchise identity visible throughout.",
+    "detail": "A dark ceiling with yellow detailing, blue upholstered seating and graphic wall treatments create a recognisable dining environment. The kitchen photographs add the operational view: cooking equipment, extraction and preparation surfaces.",
+    "proof": "Restaurant layout · Branded finishes · Front and back of house",
+    "alts": [
+      "Jay Bhavani Windsor restaurant with blue booth seating, a service counter and yellow ceiling accents.",
+      "Blue upholstered booths and a planted feature wall at Jay Bhavani Windsor.",
+      "Jay Bhavani Windsor commercial kitchen with extraction canopy and cooking equipment.",
+      "The street-facing exterior of Jay Bhavani Windsor."
+    ],
+    "caps": [
+      "The service counter and dining room in one view.",
+      "Seating and feature-wall details.",
+      "The working kitchen, including extraction and cooking equipment.",
+      "The completed restaurant exterior."
+    ],
+    "slug": "jay-bhavani-windsor",
+    "source": "https://lifebuildcanada.ca/jay-bhavani-windsor/"
+  },
+  {
+    "key": "jimmy-johns",
+    "name": "Jimmy John’s",
+    "location": "Windsor, Ontario",
+    "kind": "Quick-service restaurant",
+    "title": "A clear route from order to service.",
+    "intro": "A quick-service restaurant with a streamlined counter, preparation areas and seating organised around the brand’s service experience.",
+    "scope": [
+      "Front-of-house service counter",
+      "Back-of-house preparation areas",
+      "Interior finishes and brand integration",
+      "Dine-in and takeaway layout"
+    ],
+    "narrative": "The layout connects ordering, kitchen operations, dine-in and takeaway. Its scope connects the front-of-house counter with the back-of-house preparation areas, supported by clean finishes and a consistent brand palette.",
+    "detail": "The photographs show the relationship between the service counter, preparation surfaces and seating. Red wall accents and black tile carry the brand through the interior; the exterior images show the completed street presence.",
+    "proof": "Counter layout · Preparation areas · Brand consistency",
+    "alts": [
+      "Jimmy John’s Windsor service counter with black tile, stainless-steel surfaces and red brand accents.",
+      "Jimmy John’s Windsor dining area with tables and branded wall graphics.",
+      "Jimmy John’s Windsor preparation and service counter viewed from the dining area.",
+      "The completed Jimmy John’s Windsor exterior with a red awning."
+    ],
+    "caps": [
+      "Counter and preparation areas, seen together.",
+      "The finished dine-in seating area.",
+      "A closer view of the service and preparation layout.",
+      "The completed street-facing exterior."
+    ],
+    "slug": "jimmy-johns-windsor",
+    "source": "https://lifebuildcanada.ca/jimmy-johns-windsor/"
+  }
+]
