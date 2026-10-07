@@ -16,7 +16,7 @@
   font-synthesis:none;
 }
 * {box-sizing:border-box;}
-html {scroll-behavior:smooth;scroll-padding-top:110px;}
+html {scroll-padding-top:110px;}
 body {margin:0;font-size:1rem;line-height:1.6;}
 body.modal-open {overflow:hidden;}
 button,input {font:inherit;}
@@ -34,8 +34,8 @@ p {max-width:66ch;}
 a:focus-visible,button:focus-visible {outline:3px solid var(--clay);outline-offset:5px;}
 .eyebrow {font-size:.75rem;font-weight:650;letter-spacing:.12em;text-transform:uppercase;line-height:1.7;color:var(--clay-text);}
 .eyebrow::before {content:"";display:inline-block;width:7px;height:7px;background:var(--clay);margin-right:12px;vertical-align:1px;}
-.button {display:inline-flex;justify-content:center;align-items:center;min-height:54px;padding:15px 25px;border:1px solid var(--clay-action);background:var(--clay-action);color:var(--chalk);font-size:.9375rem;font-weight:550;text-decoration:none;transition:background .2s ease,transform .2s ease;}
-.button:hover {background:#7e3f29;transform:translateY(-2px);}
+.button {display:inline-flex;justify-content:center;align-items:center;gap:20px;min-height:54px;padding:15px 25px;border:1px solid var(--clay-action);background:var(--clay-action);color:var(--chalk);font-size:.9375rem;font-weight:550;text-decoration:none;transition:background .2s ease;}
+.button:hover {background:#7e3f29;}
 .button-small {min-height:44px;padding:10px 17px;font-size:.875rem;}
 .text-link {display:inline-block;min-height:44px;padding:10px 0;font-size:.9375rem;color:var(--clay-text);}
 .quiet-note {display:block;margin-top:13px;font-size:.8125rem;color:var(--ink-soft);}
@@ -61,8 +61,8 @@ a:focus-visible,button:focus-visible {outline:3px solid var(--clay);outline-offs
 .hero h1 span {color:var(--basalt);}
 .hero-bottom {display:flex;justify-content:space-between;align-items:center;gap:32px;padding:38px var(--gutter) 54px;}
 .hero-bottom>p {font-size:1.125rem;}
-.hero-bottom>div {display:flex;align-items:center;gap:26px;}
-.hero-bottom .quiet-note {margin:0;max-width:12ch;}
+.hero-invitation {display:flex;flex-direction:column;align-items:flex-start;gap:16px;}
+.hero-thought {max-width:23ch;font-size:clamp(1.25rem,2vw,1.65rem);font-weight:400;letter-spacing:-.035em;line-height:1.25;}
 .hero-image {position:relative;height:clamp(350px,48vw,740px);margin:0 var(--gutter);overflow:hidden;background:var(--sandstone);}
 .hero-image>img {width:100%;height:100%;object-fit:cover;object-position:center;}
 .hero-image figcaption a {text-align:right;text-decoration:none;line-height:1.5;}
@@ -199,22 +199,10 @@ a:focus-visible,button:focus-visible {outline:3px solid var(--clay);outline-offs
 .project-next>div:last-child {align-self:center;}
 .project-next>div:last-child>p:first-child {font-size:1.625rem;line-height:1.4;margin-bottom:26px;}
 
-/* Native dialogs preserve keyboard navigation and a direct URL fallback. */
+/* The photograph viewer remains an optional enhancement. */
 dialog {max-width:100%;border:0;padding:0;width:min(820px,calc(100% - 40px));max-height:calc(100dvh - 40px);height:min(850px,calc(100dvh - 40px));color:var(--basalt);background:var(--chalk);box-shadow:0 20px 100px #0005;}
 dialog[open] {display:flex;flex-direction:column;}
 dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
-.dialog-heading,.form-help,.dialog-footnote {flex-shrink:0;}
-.dialog-heading {display:flex;justify-content:space-between;align-items:flex-start;gap:22px;padding:30px 32px 20px;}
-.dialog-heading h2 {font-size:1.875rem;letter-spacing:-.03em;margin:12px 0;}
-.dialog-heading p:not(.eyebrow) {font-size:.875rem;color:var(--ink-soft);}
-.close-dialog {border:1px solid var(--line);padding:8px 12px;min-height:44px;background:transparent;color:var(--basalt);font-size:.875rem;}
-.form-help {font-size:.8125rem;padding:12px 32px;background:#e8e2d6;max-width:none;}
-.form-help a {display:inline-block;margin-left:6px;}
-.form-container {position:relative;flex:1;min-height:200px;background:white;}
-.form-container iframe {display:block;border:0;width:100%;height:100%;min-height:200px;}
-.form-loading {position:absolute;inset:25px auto auto 32px;font-size:.875rem;color:var(--ink-soft);pointer-events:none;}
-.form-loading[hidden] {display:none;}
-.dialog-footnote {padding:15px 32px 20px;font-size:.75rem;color:var(--ink-soft);max-width:none;}
 .photo-dialog {width:calc(100% - 40px);height:calc(100dvh - 40px);background:#1b2721;color:var(--chalk);}
 .photo-toolbar,.photo-controls {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 24px;flex-shrink:0;}
 .photo-toolbar {border-bottom:1px solid #ffffff30;}
@@ -227,9 +215,42 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
 .photo-controls {border-top:1px solid #ffffff30;}
 .photo-controls p {text-align:center;max-width:75ch;}
 
-/* Content is visible by default. Motion only enhances an already usable page. */
-.reveal-ready {opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease;}
-.reveal-ready.is-visible {opacity:1;transform:none;}
+/* A quiet intake page, with the published Google Forms as the destination. */
+.contact-page {padding:72px var(--gutter) 118px;}
+.contact-intro {max-width:1000px;padding-bottom:78px;}
+.contact-intro .eyebrow {margin-bottom:32px;}
+.contact-intro h1 {font-size:clamp(3rem,7vw,6.75rem);line-height:1.02;}
+.contact-intro>p:last-child {margin-top:30px;font-size:clamp(1.125rem,1.7vw,1.35rem);color:var(--ink-soft);line-height:1.55;}
+.contact-layout {display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.7fr);gap:clamp(50px,8vw,150px);border-top:1px solid var(--line);padding-top:58px;}
+.contact-form fieldset {border:0;padding:0;margin:0 0 56px;min-width:0;}
+.contact-form legend {margin-bottom:36px;color:var(--clay-text);font-size:.75rem;font-weight:650;letter-spacing:.12em;text-transform:uppercase;}
+.field {min-width:0;margin-bottom:28px;}
+.field-row {display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+.field label {display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:.9375rem;font-weight:560;}
+.field label span,.form-optional summary span {color:var(--ink-soft);font-size:.75rem;font-weight:400;white-space:nowrap;}
+.field input,.field select,.field textarea {display:block;width:100%;min-width:0;min-height:52px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;color:var(--basalt);padding:10px 0;font:inherit;line-height:1.5;}
+.field textarea {resize:vertical;min-height:95px;}
+.field input::placeholder,.field textarea::placeholder {color:#69766c;}
+.field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible {outline:2px solid var(--clay);outline-offset:3px;border-bottom-color:transparent;}
+.form-optional {border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:8px 0 30px;padding:17px 0;}
+.form-optional summary {display:flex;justify-content:space-between;gap:16px;cursor:pointer;list-style:none;font-size:1rem;font-weight:550;}
+.form-optional summary::-webkit-details-marker {display:none;}
+.form-optional summary::after {content:"+";order:1;color:var(--clay-text);font-size:1.2rem;line-height:1;}
+.form-optional[open] summary::after {content:"−";}
+.form-optional>p {margin:17px 0 24px;font-size:.875rem;color:var(--ink-soft);}
+.form-optional .field:last-child {margin-bottom:5px;}
+.consent {display:flex;gap:14px;align-items:flex-start;max-width:62ch;font-size:.875rem;line-height:1.55;}
+.consent input {flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--clay-action);}
+.consent strong {font-size:.75rem;color:var(--ink-soft);font-weight:400;}
+.form-end {border-top:1px solid var(--line);padding-top:26px;}
+.form-end>p {margin-top:17px;font-size:.8125rem;color:var(--ink-soft);}
+.contact-aside {align-self:start;position:sticky;top:150px;}
+.contact-aside .aside-thought {margin:26px 0 40px;font-family:Georgia,serif;font-size:clamp(1.65rem,2.5vw,2.4rem);font-style:italic;line-height:1.3;letter-spacing:-.035em;}
+.contact-aside ol {padding:0 0 0 22px;margin:0 0 42px;}
+.contact-aside li {padding:0 0 13px 8px;}
+.contact-aside>p:not(.aside-thought):not(.eyebrow) {margin-top:24px;font-size:.875rem;color:var(--ink-soft);}
+.contact-aside a {color:var(--clay-text);}
+.compact-footer {padding-top:32px;}
 
 @media(min-width:1800px) {
   :root {--gutter:max(88px,calc((100vw - 1600px)/2));}
@@ -262,8 +283,7 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
   .hero h1 {font-size:clamp(2.5rem,8.8vw,4.125rem);line-height:1.04;}
   .hero-bottom {display:block;padding-top:28px;padding-bottom:34px;}
   .hero-bottom>p {font-size:1rem;}
-  .hero-bottom>div {margin-top:25px;gap:18px;}
-  .hero-bottom .quiet-note {font-size:.75rem;}
+  .hero-invitation {margin-top:25px;gap:18px;}
   .hero-image {height:460px;margin:0;}
   .hero-image>img {object-position:60% center;}
   .hero-image figcaption a {text-align:right;text-decoration:none;line-height:1.5;}
@@ -327,13 +347,19 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
   .gallery-grid figure:first-child {grid-column:auto;}
   .gallery-grid figure:first-child img {aspect-ratio:3/2;}
   .project-next {gap:40px;}
+  .contact-page {padding-top:48px;padding-bottom:76px;}
+  .contact-intro {padding-bottom:48px;}
+  .contact-intro .eyebrow {margin-bottom:22px;}
+  .contact-intro>p:last-child {margin-top:20px;}
+  .contact-layout {grid-template-columns:1fr;gap:54px;padding-top:38px;}
+  .field-row {grid-template-columns:1fr;gap:0;}
+  .contact-form fieldset {margin-bottom:42px;}
+  .contact-form legend {margin-bottom:26px;}
+  .contact-aside {position:static;border-top:1px solid var(--line);padding-top:42px;}
+  .contact-aside .aside-thought {margin:20px 0 30px;}
   dialog,.photo-dialog {width:100%;height:100dvh;max-height:100dvh;margin:0;}
   .dialog-heading {padding:23px 20px 17px;gap:12px;}
   .dialog-heading h2 {font-size:1.6875rem;}
-  .form-help {padding:12px 20px;}
-  .form-help a {display:block;margin:5px 0 0;}
-  .dialog-footnote {padding-left:20px;padding-right:20px;}
-  .close-dialog {padding:8px;}
   .button {max-width:100%;}
   .photo-toolbar,.photo-controls {padding:12px 16px;gap:12px;}
   .photo-stage {padding:12px;}
@@ -343,5 +369,4 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
 @media(prefers-reduced-motion:reduce) {
   html {scroll-behavior:auto;}
   *,*::before,*::after {animation:none!important;transition:none!important;}
-  .reveal-ready {opacity:1;transform:none;}
 }

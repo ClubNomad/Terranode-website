@@ -13,10 +13,12 @@ const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath
 const projects = JSON.parse(readFileSync(resolve(root, 'projects.json'), 'utf8'));
 const sources = JSON.parse(readFileSync(resolve(root, 'project-sources.json'), 'utf8'));
 if (manifest) assert.equal(manifest.static.directory, 'dist');
-assert.equal(files.length, 5, 'Homepage and four project profiles');
+assert.equal(files.length, 8, 'Homepage, four projects and three contact pages');
 for (const html of Object.values(pages)) assert.ok(!/chatgpt|openai|siwc/i.test(html), 'Pages have no ChatGPT runtime requirement');
 for (const [file, html] of Object.entries(pages)) {
-  assert.ok(html.includes('mailto:info@terranode.ca?subject=Terranode%20project%20enquiry'), `${file}: company email route`);
+  if (file === 'index.html' || file === 'start.html' || projects.some(p => file === p.key + '.html')) {
+    assert.ok(html.includes('mailto:info@terranode.ca?subject=Terranode%20project%20enquiry'), `${file}: company email route`);
+  }
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1, `${file}: exactly one page heading`);
   const ids = idsFor(html);
   assert.equal(ids.length, new Set(ids).size, `${file}: unique IDs`);
@@ -41,12 +43,25 @@ for (const [file, html] of Object.entries(pages)) {
     assert.ok(/alt="[^"]*"/.test(tag), `${file}: image alt`);
     assert.ok(/width="\d+"/.test(tag) && /height="\d+"/.test(tag), `${file}: image dimensions`);
   }
-  const links = [...html.matchAll(/data-form="(enquiry|change|vendor)" href="([^"]+)"/g)];
-  assert.equal(new Set(links.map(m=>m[1])).size,3, `${file}: three form routes`);
-  assert.equal(new Set(links.map(m=>m[2])).size,3, `${file}: consistent form destinations`);
+  assert.ok(html.includes('href="favicon.svg"'), `${file}: small-screen brand icon`);
+  assert.ok(!html.includes('<iframe'), `${file}: no embedded form`);
+  assert.ok(!html.includes('data-reveal'), `${file}: no scroll reveal`);
   assert.ok(!/spreadsheets\/d\/|drive\.google\.com|forms\/d\/(?!e\/)/.test(html), `${file}: no internal editor links`);
   assert.ok(!/Splice|Splyce|Nodera|Hypha|Neuron|Ontario-only|Ushaben|Amar Soni|Hans Sathavara|Sonia Soni|Minna Beliveau|Jack reacher|400\+|12\+/.test(html), `${file}: no obsolete or unverified claims`);
-  assert.ok(html.includes('Completed under LifeBuild Canada.'), `${file}: historical attribution`);
+  if (file === 'index.html' || projects.some(p => file === p.key + '.html')) {
+    assert.ok(html.includes('Completed under LifeBuild Canada.'), `${file}: historical attribution`);
+  }
+}
+for (const file of ['start.html', 'change-request.html', 'trade-partner.html']) {
+  const html = pages[file];
+  assert.ok(/<form[^>]+action="https:\/\/docs\.google\.com\/forms\/d\/e\/[^"]+\/formResponse"[^>]+method="post"/.test(html), `${file}: published form destination`);
+  assert.ok(html.includes('target="_blank"') && html.includes('rel="noopener"'), `${file}: confirmation opens safely`);
+  assert.ok(html.includes('type="submit"') && html.includes('required'), `${file}: usable form`);
+}
+for (const file of ['index.html', ...projects.map(p => p.key+'.html')]) {
+  for (const route of ['start.html','change-request.html','trade-partner.html']) {
+    assert.ok(pages[file].includes('href="'+route+'"'), `${file}: route to ${route}`);
+  }
 }
 assert.ok(!pages['index.html'].includes('welcome-'), 'Homepage uses real photography');
 assert.ok(pages['index.html'].includes('assets/jay-windsor-2-1600.jpg'), 'Completed-work hero');
@@ -65,4 +80,4 @@ for (const file of readdirSync(resolve(dist,'assets'))) assert.ok(statSync(resol
 execFileSync(process.execPath,['--check',resolve(dist,'script.js')]);
 const sourceBytes=['index.html','styles.css','script.js'].reduce((n,f)=>n+statSync(resolve(dist,f)).size,0);
 assert.ok(sourceBytes<50000,'Homepage HTML, shared CSS and JS under 50 KB');
-console.log(`PASS: five pages, cross-page links, anchors, assets, three public form routes, two current people, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);
+console.log(`PASS: eight pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);
