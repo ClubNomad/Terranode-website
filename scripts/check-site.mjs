@@ -64,7 +64,12 @@ for (const file of ['index.html', ...projects.map(p => p.key+'.html')]) {
   }
 }
 assert.ok(!pages['index.html'].includes('welcome-'), 'Homepage uses real photography');
-assert.ok(pages['index.html'].includes('assets/jay-windsor-2-1600.jpg'), 'Completed-work hero');
+assert.ok(pages['index.html'].includes('assets/jay-etobicoke-1-1600.jpg'), 'Completed-work hero');
+assert.ok(pages['index.html'].includes('Terranode designs, plans and builds.'), 'Immediate design, planning and construction positioning');
+assert.ok(pages['index.html'].includes('Selected completed work') && pages['index.html'].includes('Shown here as prior project experience'), 'Portfolio presented as prior completed work');
+assert.ok(pages['index.html'].includes('Commercial kitchen built for Jay Bhavani Etobicoke'), 'Homepage includes construction evidence');
+assert.ok(!pages['index.html'].includes('Studio detail / Club Nomad'), 'Homepage uses project photography in the closing invitation');
+for (const p of projects) assert.ok(pages[p.key+'.html'].includes('Shown here as prior project experience'), `${p.key}: clear historical attribution`);
 assert.ok(pages['index.html'].includes('id="dipesh-name">Dipesh</h3>') && pages['index.html'].includes('id="manjil-name">Manjil</h3>'), 'Both current people introduced');
 assert.equal((pages['index.html'].match(/class="director-title"/g)||[]).length,2,'Both people identified as Directors');
 for (const p of projects) assert.ok(pages[p.key+'.html'].includes(p.name), `${p.key}: named project page`);
