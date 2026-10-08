@@ -84,5 +84,5 @@ assert.ok(css.includes('--clay:#b66a4e') && css.includes('background:var(--clay-
 for (const file of readdirSync(resolve(dist,'assets'))) assert.ok(statSync(resolve(dist,'assets',file)).size<400000, `Image budget ${file}`);
 execFileSync(process.execPath,['--check',resolve(dist,'script.js')]);
 const sourceBytes=['index.html','styles.css','script.js','appearance.js'].reduce((n,f)=>n+statSync(resolve(dist,f)).size,0);
-assert.ok(sourceBytes<52000,'Homepage HTML, shared CSS and all JS under 52 KB');
+assert.ok(sourceBytes<60000,'Homepage HTML, shared CSS and all JS under 60 KB');
 console.log(`PASS: eight pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);

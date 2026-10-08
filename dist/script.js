@@ -1,24 +1,89 @@
 'use strict';
-document.documentElement.classList.add('js');
 const menu = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('#main-nav');
-function closeMenu() {
-  menu.setAttribute('aria-expanded', 'false');
-  navigation.classList.remove('is-open');
+const header = document.querySelector('.site-header');
+const compactNavigation = matchMedia('(max-width: 1280px)');
+const background = [document.querySelector('.skip-link'), document.querySelector('main'), document.querySelector('footer')].filter(Boolean);
+const menuLabel = menu.querySelector('.menu-label');
+
+function positionMenu() {
+  navigation.style.setProperty('--menu-top', `${Math.max(0, header.getBoundingClientRect().bottom)}px`);
 }
+
+function closeMenu({ restoreFocus = false } = {}) {
+  const wasOpen = menu.getAttribute('aria-expanded') === 'true';
+  menu.setAttribute('aria-expanded', 'false');
+  menuLabel.textContent = 'Menu';
+  navigation.classList.remove('is-open');
+  navigation.inert = compactNavigation.matches;
+  document.documentElement.classList.remove('menu-open');
+  background.forEach(element => { element.inert = false; });
+  if (wasOpen && restoreFocus && compactNavigation.matches) menu.focus({ preventScroll: true });
+}
+
+function openMenu() {
+  if (!compactNavigation.matches) return;
+  positionMenu();
+  navigation.inert = false;
+  navigation.classList.add('is-open');
+  menu.setAttribute('aria-expanded', 'true');
+  menuLabel.textContent = 'Close';
+  background.forEach(element => { element.inert = true; });
+  document.documentElement.classList.add('menu-open');
+  navigation.querySelector('a').focus({ preventScroll: true });
+}
+
+function syncNavigation() {
+  if (menu.getAttribute('aria-expanded') === 'true') closeMenu({ restoreFocus: compactNavigation.matches });
+  navigation.inert = compactNavigation.matches;
+}
+
+syncNavigation();
+compactNavigation.addEventListener('change', syncNavigation);
+window.addEventListener('resize', () => {
+  if (menu.getAttribute('aria-expanded') === 'true') positionMenu();
+});
+window.addEventListener('pageshow', syncNavigation);
 menu.addEventListener('click', () => {
-  const expanded = menu.getAttribute('aria-expanded') === 'true';
-  menu.setAttribute('aria-expanded', String(!expanded));
-  navigation.classList.toggle('is-open', !expanded);
+  if (menu.getAttribute('aria-expanded') === 'true') closeMenu({ restoreFocus: true });
+  else openMenu();
 });
 navigation.addEventListener('click', event => {
-  if (event.target.closest('a')) closeMenu();
+  const link = event.target.closest('a[href]');
+  if (!link || menu.getAttribute('aria-expanded') !== 'true') return;
+  const destination = new URL(link.href);
+  const samePageSection = destination.pathname === location.pathname && destination.hash;
+  closeMenu();
+  if (samePageSection) {
+    requestAnimationFrame(() => {
+      const target = document.getElementById(decodeURIComponent(destination.hash.slice(1)));
+      if (target) {
+        target.tabIndex = -1;
+        target.focus({ preventScroll: true });
+      }
+    });
+  }
+});
+header.querySelector('.brand').addEventListener('click', () => {
+  if (menu.getAttribute('aria-expanded') === 'true') closeMenu();
 });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
-    closeMenu();
-    menu.focus();
+  if (menu.getAttribute('aria-expanded') !== 'true') return;
+  if (event.key === 'Escape') return closeMenu({ restoreFocus: true });
+  if (event.key !== 'Tab') return;
+  const focusable = [header.querySelector('.brand'), menu, ...navigation.querySelectorAll('a[href], select:not(:disabled)')];
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && (document.activeElement === first || !focusable.includes(document.activeElement))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (document.activeElement === last || !focusable.includes(document.activeElement))) {
+    event.preventDefault();
+    first.focus();
   }
+});
+window.addEventListener('hashchange', () => {
+  if (menu.getAttribute('aria-expanded') === 'true') closeMenu({ restoreFocus: true });
 });
 document.querySelector('#year').textContent = new Date().getFullYear();
 
