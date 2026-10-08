@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="en-CA">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#26352f">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f2e9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#18251f" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Introduce your trade or service to Terranode.">
     <meta property="og:site_name" content="Terranode">
   <meta property="og:type" content="website">
@@ -23,11 +25,22 @@
   <title>Trade partners — Terranode</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
   <link rel="icon" href="favicon.ico" sizes="any"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <script>
+    (() => {
+      let choice;
+      try { choice = localStorage.getItem('terranode.appearance'); } catch (_) {}
+      const theme = choice === 'light' || choice === 'dark' ? choice : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+      document.querySelectorAll('meta[name="theme-color"]').forEach(meta => { meta.content = theme === 'dark' ? '#18251f' : '#f5f2e9'; });
+    })();
+  </script>
+  <script src="appearance.js" defer></script>
   <link rel="stylesheet" href="styles.css"><script src="script.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header"><a class="brand" href="index.html" aria-label="Terranode home"><img src="terranode-logo-horizontal.svg" alt="Terranode — Design + Construction" width="960" height="190"></a><button class="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false">Menu</button><nav id="main-nav" aria-label="Main navigation"><a href="index.html#work">Our work</a><a href="index.html#about">About us</a><a href="index.html#spaces">Our focus</a><a href="start.html">Start a conversation</a></nav></header>
+  <header class="site-header"><a class="brand" href="index.html" aria-label="Terranode home"><img class="brand-logo-light" src="terranode-logo-horizontal.svg" alt="Terranode — Design + Construction" width="960" height="190"><img class="brand-logo-dark" src="terranode-logo-dark.svg" alt="Terranode — Design + Construction" width="960" height="190"></a><button class="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false">Menu</button><nav id="main-nav" aria-label="Main navigation"><a href="index.html#work">Our work</a><a href="index.html#about">About us</a><a href="index.html#spaces">Our focus</a><a href="start.html">Start a conversation</a><div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" data-appearance disabled><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></nav></header>
   <main id="main" class="contact-page">
     <section class="contact-intro"><p class="eyebrow">Work together</p><h1>Good work starts<br>with good people.</h1><p>Tell us what you do and where you work. A short introduction is enough to start a conversation.</p></section>
     <div class="contact-layout">
