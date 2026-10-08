@@ -39,6 +39,7 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(meta => { meta.content = theme === 'dark' ? '#18251f' : '#f5f2e9'; });
     })();
   </script>
+  <script>document.documentElement.classList.add("js");</script>
   <script src="appearance.js" defer></script>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
@@ -47,13 +48,15 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="#" aria-label="Terranode home"><img class="brand-logo-light" src="terranode-logo-horizontal.svg" alt="Terranode — Design + Construction" width="960" height="190"><img class="brand-logo-dark" src="terranode-logo-dark.svg" alt="Terranode — Design + Construction" width="960" height="190"></a>
-    <button class="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false">Menu</button>
-    <nav id="main-nav" aria-label="Main navigation">
-      <a href="#work">Our work</a>
-      <a href="#about">About us</a>
-      <a href="#spaces">Our focus</a>
-      <a class="button button-small" href="start.html">Start a conversation</a>
-    <div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" data-appearance disabled><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></nav>
+    <button class="menu-toggle" type="button" aria-controls="main-nav" aria-expanded="false"><span class="menu-label">Menu</span><span class="menu-icon" aria-hidden="true"><span></span><span></span></span></button><nav id="main-nav" aria-label="Main navigation">
+      <p class="nav-heading">Explore Terranode</p>
+      <div class="nav-links">
+        <a href="#work"><span class="nav-number" aria-hidden="true">01</span><span>Projects</span><span class="nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="#spaces"><span class="nav-number" aria-hidden="true">02</span><span>Services</span><span class="nav-arrow" aria-hidden="true">↗</span></a>
+        <a href="#about"><span class="nav-number" aria-hidden="true">03</span><span>About</span><span class="nav-arrow" aria-hidden="true">↗</span></a>
+      </div>
+      <div class="nav-actions"><a class="button button-small nav-inquiry" href="start.html">Start a conversation</a><div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" data-appearance disabled><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div>
+    </nav>
   </header>
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
