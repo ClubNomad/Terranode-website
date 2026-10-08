@@ -42,7 +42,7 @@
   <script>document.documentElement.classList.add("js");</script>
   <script src="appearance.js" defer></script>
   <link rel="stylesheet" href="styles.css">
-  <script src="script.js" defer></script>
+  <script src="script.js" defer></script><script src="form-accessibility.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -58,7 +58,7 @@
       <div class="nav-actions"><a class="button button-small nav-inquiry" href="start.html" aria-current="page">Start a conversation</a><div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" data-appearance disabled><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div>
     </nav>
   </header>
-  <main id="main" class="contact-page">
+  <main tabindex="-1" id="main" class="contact-page">
     <section class="contact-intro" aria-labelledby="contact-title"><p class="eyebrow">A simple beginning</p><h1 id="contact-title">Tell us what<br>you’re imagining.</h1><p>It can be an early thought or a plan already underway. A few details help us begin a useful conversation.</p></section>
     <div class="contact-layout">
       <form class="contact-form" action="https://docs.google.com/forms/d/e/1FAIpQLSeyYeLKerKvjm5Hqb99-ON7xEn9RzwuIWFgeDnViCyDsyOydw/formResponse" method="post" target="_blank" rel="noopener" accept-charset="UTF-8" data-native-form>

@@ -5,6 +5,12 @@ const header = document.querySelector('.site-header');
 const compactNavigation = matchMedia('(max-width: 1280px)');
 const background = [document.querySelector('.skip-link'), document.querySelector('main'), document.querySelector('footer')].filter(Boolean);
 const menuLabel = menu.querySelector('.menu-label');
+const measureHeader = () => {
+  document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
+  if (menu.getAttribute('aria-expanded') === 'true') positionMenu();
+};
+measureHeader();
+if (typeof ResizeObserver === 'function') new ResizeObserver(measureHeader).observe(header);
 
 function positionMenu() {
   navigation.style.setProperty('--menu-top', `${Math.max(0, header.getBoundingClientRect().bottom)}px`);
@@ -26,6 +32,7 @@ function openMenu() {
   positionMenu();
   navigation.inert = false;
   navigation.classList.add('is-open');
+  navigation.scrollTop = 0;
   menu.setAttribute('aria-expanded', 'true');
   menuLabel.textContent = 'Close';
   background.forEach(element => { element.inert = true; });
