@@ -126,6 +126,7 @@ a:focus-visible,button:focus-visible {outline:3px solid var(--clay);outline-offs
 .about-close .text-link {flex-shrink:0;}
 .spaces {background:#eae4da;}
 .service-list {margin-top:60px;}
+.spaces-intro {max-width:58ch;margin-top:24px;font-size:1.125rem;color:var(--ink-soft);}
 .service-list article {display:grid;grid-template-columns:7% 1fr 20%;gap:24px;padding:34px 0;border-top:1px solid var(--line);}
 .service-list article:last-child {border-bottom:1px solid var(--line);}
 .service-number {font-size:.8125rem;color:var(--clay-text);padding-top:6px;}
