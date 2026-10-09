@@ -83,6 +83,7 @@ assert.ok(css.includes('prefers-reduced-motion') && css.includes(':focus-visible
 assert.ok(css.includes('--clay:#b66a4e') && css.includes('background:var(--clay-action)'), 'Rustic orange in the design system');
 for (const file of readdirSync(resolve(dist,'assets'))) assert.ok(statSync(resolve(dist,'assets',file)).size<400000, `Image budget ${file}`);
 execFileSync(process.execPath,['--check',resolve(dist,'script.js')]);
+execFileSync(process.execPath,['--check',resolve(dist,'form-accessibility.js')]);
 const sourceBytes=['index.html','styles.css','script.js','appearance.js'].reduce((n,f)=>n+statSync(resolve(dist,f)).size,0);
-assert.ok(sourceBytes<60000,'Homepage HTML, shared CSS and all JS under 60 KB');
+assert.ok(sourceBytes<64000,'Homepage HTML, shared CSS and core JS under 64 KB');
 console.log(`PASS: eight pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);

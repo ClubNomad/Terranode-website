@@ -1,0 +1,267 @@
+{
+  "target": "WCAG 2.2 AA; no conformance claim",
+  "tool": "axe-core 4.14.0 / Chrome on macOS",
+  "page_scans": [
+    {
+      "file": "index.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              ".hero-image > figcaption > span"
+            ],
+            [
+              "figcaption > a[href$=\"jay-etobicoke.html\"]"
+            ],
+            [
+              "figcaption > a[href$=\"jay-etobicoke.html\"] > span"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "file": "atithi.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jay-etobicoke.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jay-windsor.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jimmy-johns.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "start.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "change-request.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "trade-partner.html",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "index.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              ".hero-image > figcaption > span"
+            ],
+            [
+              "figcaption > a[href$=\"jay-etobicoke.html\"]"
+            ],
+            [
+              "figcaption > a[href$=\"jay-etobicoke.html\"] > span"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "file": "atithi.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jay-etobicoke.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jay-windsor.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "jimmy-johns.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "start.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "change-request.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "trade-partner.html",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    }
+  ],
+  "layout_overflows_after": [],
+  "browser_errors": [],
+  "interaction_checks": [
+    "start.html/light: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "change-request.html/light: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "trade-partner.html/light: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "start.html/dark: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "change-request.html/dark: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "trade-partner.html/dark: persistent errors, error focus, repair, native valid POST preserved (blocked before sending)",
+    "menu/light: keyboard open, use, Escape and restored focus at 320px/200%",
+    "menu/dark: keyboard open, use, Escape and restored focus at 320px/200%",
+    "viewer/light: keyboard open, use, Escape and restored focus at 320px/200%",
+    "viewer/dark: keyboard open, use, Escape and restored focus at 320px/200%",
+    "index.html: skip link and keyboard traversal, no fully obscured focus",
+    "atithi.html: skip link and keyboard traversal, no fully obscured focus",
+    "start.html: skip link and keyboard traversal, no fully obscured focus",
+    "change-request.html: skip link and keyboard traversal, no fully obscured focus",
+    "trade-partner.html: skip link and keyboard traversal, no fully obscured focus"
+  ],
+  "state_scans": [
+    {
+      "file": "start.html",
+      "theme": "light",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "change-request.html",
+      "theme": "light",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "trade-partner.html",
+      "theme": "light",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "start.html",
+      "theme": "dark",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "change-request.html",
+      "theme": "dark",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "file": "trade-partner.html",
+      "theme": "dark",
+      "state": "invalid",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "state": "menu",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "landmark-one-main",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "id": "page-has-heading-one",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        }
+      ],
+      "incomplete": []
+    },
+    {
+      "state": "menu",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "landmark-one-main",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "id": "page-has-heading-one",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        }
+      ],
+      "incomplete": []
+    },
+    {
+      "state": "viewer",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "state": "viewer",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    }
+  ],
+  "extra_checks": [
+    "Malformed email and URL guidance",
+    "Required phone inside collapsed details",
+    "Menu reopen resets scrolling",
+    "15 text-spacing layouts at 320/768/1440px",
+    "Source comparison: original content, metadata and form names/actions preserved",
+    "Existing site checks pass"
+  ],
+  "limitations": [
+    "Physical mobile devices, Safari/Firefox and screen-reader speech unverified",
+    "No actual form submissions; Google confirmation/receipt unverified",
+    "Open-menu document-level landmark/H1 best-practice reports correspond to inert background",
+    "Image-caption contrast assessed manually; worst case 12.43:1 and 10.40:1"
+  ]
+}
