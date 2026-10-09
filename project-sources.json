@@ -221,6 +221,59 @@
         1067
       ],
       "bytes": 268815
+    },
+    {
+      "file": "assets/atithi-arrival-800.jpg",
+      "source_page": "https://lifebuildcanada.ca/atithi-scarborough-canada/",
+      "source_image": "https://drive.google.com/file/d/1UXiVkw_tQZw147gdrxsNGPiiDNFineRx/view",
+      "source_filename": "_Z7A8917.jpg",
+      "source_folder": "Atithi, Scarborough",
+      "dimensions": [
+        800,
+        533
+      ],
+      "bytes": 71589,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/atithi-arrival-1600.jpg",
+      "source_page": "https://lifebuildcanada.ca/atithi-scarborough-canada/",
+      "source_image": "https://drive.google.com/file/d/1UXiVkw_tQZw147gdrxsNGPiiDNFineRx/view",
+      "source_filename": "_Z7A8917.jpg",
+      "source_folder": "Atithi, Scarborough",
+      "dimensions": [
+        1600,
+        1067
+      ],
+      "bytes": 269604,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/jimmy-johns-service-600.jpg",
+      "source_page": "https://lifebuildcanada.ca/jimmy-johns-windsor/",
+      "source_image": "https://drive.google.com/file/d/1FhcONG3o4azxqu8oHIG6itA4McHDnXru/view",
+      "source_filename": "IMG_5118.JPG",
+      "source_folder": "Jimmy Johns Windsor",
+      "dimensions": [
+        600,
+        800
+      ],
+      "bytes": 96469,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/jimmy-johns-service-1200.jpg",
+      "source_page": "https://lifebuildcanada.ca/jimmy-johns-windsor/",
+      "source_image": "https://drive.google.com/file/d/1FhcONG3o4azxqu8oHIG6itA4McHDnXru/view",
+      "source_filename": "IMG_5118.JPG",
+      "source_folder": "Jimmy Johns Windsor",
+      "dimensions": [
+        1200,
+        1600
+      ],
+      "bytes": 364943,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
     }
-  ]
+  ],
+  "photography_reviewed_on": "2026-10-09"
 }

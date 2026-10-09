@@ -79,7 +79,7 @@ for (const file of ['index.html', ...projects.map(p => p.key+'.html')]) {
   }
 }
 assert.ok(!pages['index.html'].includes('welcome-'), 'Homepage uses real photography');
-assert.ok(pages['index.html'].includes('assets/jay-etobicoke-1-1600.jpg'), 'Completed-work hero');
+assert.ok(pages['index.html'].includes('assets/atithi-arrival-1600.jpg'), 'Completed-work hero');
 assert.ok(pages['index.html'].includes('Terranode designs, plans and builds.'), 'Immediate design, planning and construction positioning');
 assert.ok(pages['index.html'].includes('Selected completed work') && pages['index.html'].includes('Shown here as prior project experience'), 'Portfolio presented as prior completed work');
 assert.ok(pages['index.html'].includes('Commercial kitchen built for Jay Bhavani Etobicoke'), 'Homepage includes construction evidence');
@@ -91,7 +91,7 @@ for (const p of projects) assert.ok(pages[p.key+'.html'].includes(p.name), `${p.
 for (const image of sources.images) {
   assert.ok(existsSync(resolve(dist,image.file)), `Source-tracked image missing ${image.file}`);
   assert.ok(image.source_page.startsWith('https://lifebuildcanada.ca/'), 'Documented source page');
-  assert.ok(image.source_image.startsWith('https://lifebuildcanada.ca/wp-content/uploads/'), 'Original photograph source');
+  assert.ok(image.source_image.startsWith('https://lifebuildcanada.ca/wp-content/uploads/') || /^https:\/\/drive\.google\.com\/file\/d\/[^/]+\/view$/.test(image.source_image), 'Original photograph source');
 }
 const css = readFileSync(resolve(dist,'styles.css'),'utf8');
 assert.ok(css.includes('prefers-reduced-motion') && css.includes(':focus-visible'), 'Motion and focus support');
