@@ -16,6 +16,13 @@ if (manifest) assert.equal(manifest.static.directory, 'dist');
 assert.equal(files.length, 8, 'Homepage, four projects and three contact pages');
 for (const html of Object.values(pages)) assert.ok(!/chatgpt|openai|siwc/i.test(html), 'Pages have no ChatGPT runtime requirement');
 for (const [file, html] of Object.entries(pages)) {
+  const canonical = `https://terranode.ca/${file === 'index.html' ? '' : file}`;
+  assert.equal((html.match(/rel="canonical"/g) || []).length, 1, `${file}: one canonical URL`);
+  assert.ok(html.includes(`<link rel="canonical" href="${canonical}">`), `${file}: canonical URL`);
+  assert.equal((html.match(/<meta name="description"/g) || []).length, 1, `${file}: one search description`);
+  assert.equal((html.match(/<title>/g) || []).length, 1, `${file}: one page title`);
+  if (file === 'change-request.html') assert.ok(html.includes('<meta name="robots" content="noindex, follow">'), `${file}: client-only page excluded from search`);
+  else assert.ok(!/<meta name="robots" content="[^"]*noindex/.test(html), `${file}: public page indexable`);
   if (file === 'index.html' || file === 'start.html' || projects.some(p => file === p.key + '.html')) {
     assert.ok(html.includes('mailto:info@terranode.ca?subject=Terranode%20project%20enquiry'), `${file}: company email route`);
   }
@@ -29,6 +36,7 @@ for (const [file, html] of Object.entries(pages)) {
       continue;
     }
     if (url.startsWith('https://')) {
+      if (url === canonical) continue;
       assert.ok(url.startsWith('https://docs.google.com/forms/d/e/'), `${file}: unexpected external URL ${url}`);
       continue;
     }
@@ -52,6 +60,13 @@ for (const [file, html] of Object.entries(pages)) {
     assert.ok(html.includes('Completed under LifeBuild Canada.'), `${file}: historical attribution`);
   }
 }
+const sitemap = readFileSync(resolve(dist, 'sitemap.xml'), 'utf8');
+const indexedPages = files.filter(file => file !== 'change-request.html');
+const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+assert.deepEqual(sitemapUrls.sort(), indexedPages.map(file => `https://terranode.ca/${file === 'index.html' ? '' : file}`).sort(), 'Sitemap lists exactly the public indexable pages');
+assert.ok(readFileSync(resolve(dist, 'robots.txt'), 'utf8').includes('Sitemap: https://terranode.ca/sitemap.xml'), 'Robots file points to sitemap');
+const structuredData = JSON.parse(pages['index.html'].match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1] || 'null');
+assert.ok(structuredData?.['@graph']?.some(item => item['@type'] === 'Organization' && item.name === 'Terranode Inc.'), 'Verified organization data');
 for (const file of ['start.html', 'change-request.html', 'trade-partner.html']) {
   const html = pages[file];
   assert.ok(/<form[^>]+action="https:\/\/docs\.google\.com\/forms\/d\/e\/[^"]+\/formResponse"[^>]+method="post"/.test(html), `${file}: published form destination`);
