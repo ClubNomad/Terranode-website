@@ -94,6 +94,22 @@ window.addEventListener('hashchange', () => {
 });
 document.querySelector('#year').textContent = new Date().getFullYear();
 
+// A single, gentle photo reveal; the image stays visible without this enhancement.
+const heroPhoto = document.querySelector('.hero-image>img');
+const reducedPhotoMotion = matchMedia('(prefers-reduced-motion: reduce)');
+if (heroPhoto && !reducedPhotoMotion.matches && typeof IntersectionObserver === 'function') {
+  const showcase = () => {
+    if (!reducedPhotoMotion.matches && heroPhoto.naturalWidth) heroPhoto.classList.add('is-showcasing');
+  };
+  const photoObserver = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    photoObserver.disconnect();
+    if (heroPhoto.complete) showcase();
+    else heroPhoto.addEventListener('load', showcase, { once: true });
+  }, { threshold: .15 });
+  photoObserver.observe(heroPhoto);
+}
+
 // Full photographs, without a gallery library or a hosting service dependency.
 const photoDialog = document.querySelector('#photo-dialog');
 const photoLinks = [...document.querySelectorAll('[data-gallery]')];
