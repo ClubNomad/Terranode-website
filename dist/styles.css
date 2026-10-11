@@ -131,7 +131,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .hero-bottom {display:flex;justify-content:space-between;align-items:center;gap:32px;padding:38px var(--gutter) 54px;}
 .hero-bottom>p {font-size:1.125rem;}
 .hero-invitation {display:flex;flex-direction:column;align-items:flex-start;gap:16px;}
-.hero-thought {max-width:23ch;font-size:clamp(1.25rem,2vw,1.65rem);font-weight:400;letter-spacing:-.035em;line-height:1.25;}
+.hero-thought {max-width:28ch;color:var(--ink-soft);font-size:.875rem;font-weight:400;letter-spacing:0;line-height:1.5;}
 .hero-image {position:relative;height:clamp(350px,48vw,740px);margin:0 var(--gutter);overflow:hidden;background:var(--media);}
 .hero-image>img {width:100%;height:100%;object-fit:cover;object-position:center;}
 .hero-image>img.is-showcasing {animation:hero-showcase 1.4s cubic-bezier(.2,.65,.3,1) both;}
