@@ -134,6 +134,11 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .hero-thought {max-width:23ch;font-size:clamp(1.25rem,2vw,1.65rem);font-weight:400;letter-spacing:-.035em;line-height:1.25;}
 .hero-image {position:relative;height:clamp(350px,48vw,740px);margin:0 var(--gutter);overflow:hidden;background:var(--media);}
 .hero-image>img {width:100%;height:100%;object-fit:cover;object-position:center;}
+.hero-image>img.is-showcasing {animation:hero-showcase 1.4s cubic-bezier(.2,.65,.3,1) both;}
+@keyframes hero-showcase {
+  from {opacity:.92;transform:scale(1.035);}
+  to {opacity:1;transform:scale(1);}
+}
 .hero-project {text-align:right;line-height:1.5;}
 .hero-project span {display:block;font-size:.75rem;opacity:.9;}
 .hero-image figcaption a {text-align:right;text-decoration:none;line-height:1.5;}
