@@ -134,6 +134,8 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .hero-thought {max-width:23ch;font-size:clamp(1.25rem,2vw,1.65rem);font-weight:400;letter-spacing:-.035em;line-height:1.25;}
 .hero-image {position:relative;height:clamp(350px,48vw,740px);margin:0 var(--gutter);overflow:hidden;background:var(--media);}
 .hero-image>img {width:100%;height:100%;object-fit:cover;object-position:center;}
+.hero-project {text-align:right;line-height:1.5;}
+.hero-project span {display:block;font-size:.75rem;opacity:.9;}
 .hero-image figcaption a {text-align:right;text-decoration:none;line-height:1.5;}
 .hero-image figcaption a:hover {text-decoration:underline;}
 .hero-image figcaption a span {display:block;font-size:.75rem;opacity:.9;}
@@ -220,7 +222,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .invitation-copy>p:not(.eyebrow):not(.quiet-note) {margin:26px 0;color:var(--ink-soft);}
 .material-study {margin-top:60px;}
 .material-study picture {display:block;overflow:hidden;aspect-ratio:1;background:var(--media);}
-.material-study img {width:100%;height:100%;object-fit:cover;object-position:center 48%;}
+.material-study img {width:100%;height:100%;object-fit:cover;object-position:center top;transform:scale(3.2);transform-origin:center top;}
 .material-study figcaption {display:flex;flex-direction:column;gap:5px;padding-top:17px;line-height:1.5;font-size:.875rem;}
 .material-study figcaption span:last-child {font-size:.75rem;color:var(--ink-soft);}
 .site-footer {padding:42px var(--gutter) 32px;background:var(--inverse-surface);color:var(--inverse-text);}
@@ -354,7 +356,7 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
   .hero-bottom>p {font-size:1rem;}
   .hero-invitation {margin-top:25px;gap:18px;}
   .hero-image {height:460px;margin:0;}
-  .hero-image>img {object-position:right center;}
+  .hero-image>img {object-position:43% center;}
   .hero-image figcaption a {text-align:right;text-decoration:none;line-height:1.5;}
 .hero-image figcaption a:hover {text-decoration:underline;}
 .hero-image figcaption a span {display:block;font-size:.75rem;opacity:.9;}
@@ -398,7 +400,6 @@ dialog::backdrop {background:rgba(20,32,26,.75);backdrop-filter:blur(6px);}
   .invitation h2 {font-size:clamp(2.5rem,10vw,4rem);}
   .material-study {width:calc(100% - 48px);margin-top:45px;margin-left:48px;}
   .material-study picture {aspect-ratio:4/3;}
-  .material-study img {object-position:center 35%;}
   .footer-word {margin-bottom:36px;}
   .footer-top {flex-direction:column;align-items:flex-start;gap:26px;padding-bottom:30px;}
   .footer-bottom {flex-direction:column;align-items:flex-start;gap:18px;}
@@ -558,5 +559,6 @@ main:focus {outline:none;}
 @media (max-width:400px) {
   .hero-image figcaption {flex-direction:column;gap:12px;}
   .hero-image figcaption a {text-align:left;}
+  .hero-project {text-align:left;}
   .hero-image figcaption span {max-width:none;}
 }

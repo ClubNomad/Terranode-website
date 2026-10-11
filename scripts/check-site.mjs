@@ -79,7 +79,7 @@ for (const file of ['index.html', ...projects.map(p => p.key+'.html')]) {
   }
 }
 assert.ok(!pages['index.html'].includes('welcome-'), 'Homepage uses real photography');
-assert.ok(pages['index.html'].includes('assets/atithi-arrival-1600.jpg'), 'Completed-work hero');
+assert.ok(pages['index.html'].includes('assets/raju-albion-daylight-1600.jpg'), 'Completed-work hero');
 assert.ok(pages['index.html'].includes('Terranode designs, plans and builds.'), 'Immediate design, planning and construction positioning');
 assert.ok(pages['index.html'].includes('Selected completed work') && pages['index.html'].includes('Shown here as prior project experience'), 'Portfolio presented as prior completed work');
 assert.ok(pages['index.html'].includes('Commercial kitchen built for Jay Bhavani Etobicoke'), 'Homepage includes construction evidence');

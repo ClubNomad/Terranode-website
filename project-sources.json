@@ -273,7 +273,49 @@
       ],
       "bytes": 364943,
       "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/raju-albion-daylight-800.jpg",
+      "source_page": "https://lifebuildcanada.ca/",
+      "source_image": "https://drive.google.com/file/d/1xiE9BPGwdE1HJW-ocNez_3KTePqXbSKA/view",
+      "source_filename": "_Z7A8803.jpg",
+      "source_folder": "Raju Omelet Albion, Etobicoke",
+      "source_folder_url": "https://drive.google.com/drive/folders/19bV9eY9eNEgLzKo1jVEZtk8nj1dq8gda",
+      "dimensions": [
+        800,
+        533
+      ],
+      "bytes": 78683,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/raju-albion-daylight-1600.jpg",
+      "source_page": "https://lifebuildcanada.ca/",
+      "source_image": "https://drive.google.com/file/d/1xiE9BPGwdE1HJW-ocNez_3KTePqXbSKA/view",
+      "source_filename": "_Z7A8803.jpg",
+      "source_folder": "Raju Omelet Albion, Etobicoke",
+      "source_folder_url": "https://drive.google.com/drive/folders/19bV9eY9eNEgLzKo1jVEZtk8nj1dq8gda",
+      "dimensions": [
+        1600,
+        1067
+      ],
+      "bytes": 245947,
+      "preparation": "Original photograph resized for the web; no retouching or generated elements."
+    },
+    {
+      "file": "assets/jay-etobicoke-ceiling-study-2400.jpg",
+      "source_page": "https://lifebuildcanada.ca/jay-bhavani-etobicoke-canada/",
+      "source_image": "https://drive.google.com/file/d/1RlsMDsrK1fxYJC59HskRsMHlvK9f0vRH/view",
+      "source_filename": "_Z7A8697.jpg",
+      "source_folder": "Jay Bhavani, Etobicoke",
+      "source_folder_url": "https://drive.google.com/drive/folders/1Eyx4W7PTVdWgmAGD_XXFf6Lj05fLWs_v",
+      "dimensions": [
+        2400,
+        1600
+      ],
+      "bytes": 391622,
+      "preparation": "Original photograph resized for the web without retouching. CSS frames the upper ceiling as an abstract architectural detail."
     }
   ],
-  "photography_reviewed_on": "2026-10-09"
+  "photography_reviewed_on": "2026-10-11"
 }
