@@ -13,7 +13,7 @@ const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath
 const projects = JSON.parse(readFileSync(resolve(root, 'projects.json'), 'utf8'));
 const sources = JSON.parse(readFileSync(resolve(root, 'project-sources.json'), 'utf8'));
 if (manifest) assert.equal(manifest.static.directory, 'dist');
-assert.equal(files.length, 8, 'Homepage, four projects and three contact pages');
+assert.equal(files.length, 9, 'Homepage, four projects, three contact pages and team gateway');
 for (const html of Object.values(pages)) assert.ok(!/chatgpt|openai|siwc/i.test(html), 'Pages have no ChatGPT runtime requirement');
 for (const [file, html] of Object.entries(pages)) {
   const canonical = `https://terranode.ca/${file === 'index.html' ? '' : file}`;
@@ -21,7 +21,7 @@ for (const [file, html] of Object.entries(pages)) {
   assert.ok(html.includes(`<link rel="canonical" href="${canonical}">`), `${file}: canonical URL`);
   assert.equal((html.match(/<meta name="description"/g) || []).length, 1, `${file}: one search description`);
   assert.equal((html.match(/<title>/g) || []).length, 1, `${file}: one page title`);
-  if (file === 'change-request.html') assert.ok(html.includes('<meta name="robots" content="noindex, follow">'), `${file}: client-only page excluded from search`);
+  if (file === 'change-request.html' || file === 'team.html') assert.ok(html.includes('<meta name="robots" content="noindex, follow">'), `${file}: private or client-only gateway excluded from search`);
   else assert.ok(!/<meta name="robots" content="[^"]*noindex/.test(html), `${file}: public page indexable`);
   if (file === 'index.html' || file === 'start.html' || projects.some(p => file === p.key + '.html')) {
     assert.ok(html.includes('mailto:info@terranode.ca?subject=Terranode%20project%20enquiry'), `${file}: company email route`);
@@ -37,6 +37,7 @@ for (const [file, html] of Object.entries(pages)) {
     }
     if (url.startsWith('https://')) {
       if (url === canonical) continue;
+      if (file === 'team.html' && url === 'https://script.google.com/a/macros/terranode.ca/s/AKfycbw5YQhIra9TvKaOuU5jkxH4tv2z8rX1DtGeiLezPBn0s1Yu51wCFvBpA0PVeqRQZETO9Q/exec') continue;
       assert.ok(url.startsWith('https://docs.google.com/forms/d/e/'), `${file}: unexpected external URL ${url}`);
       continue;
     }
@@ -61,7 +62,7 @@ for (const [file, html] of Object.entries(pages)) {
   }
 }
 const sitemap = readFileSync(resolve(dist, 'sitemap.xml'), 'utf8');
-const indexedPages = files.filter(file => file !== 'change-request.html');
+const indexedPages = files.filter(file => !['change-request.html', 'team.html'].includes(file));
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
 assert.deepEqual(sitemapUrls.sort(), indexedPages.map(file => `https://terranode.ca/${file === 'index.html' ? '' : file}`).sort(), 'Sitemap lists exactly the public indexable pages');
 assert.ok(readFileSync(resolve(dist, 'robots.txt'), 'utf8').includes('Sitemap: https://terranode.ca/sitemap.xml'), 'Robots file points to sitemap');
@@ -101,4 +102,4 @@ execFileSync(process.execPath,['--check',resolve(dist,'script.js')]);
 execFileSync(process.execPath,['--check',resolve(dist,'form-accessibility.js')]);
 const sourceBytes=['index.html','styles.css','script.js','appearance.js'].reduce((n,f)=>n+statSync(resolve(dist,f)).size,0);
 assert.ok(sourceBytes<64000,'Homepage HTML, shared CSS and core JS under 64 KB');
-console.log(`PASS: eight pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);
+console.log(`PASS: nine pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);

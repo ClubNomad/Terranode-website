@@ -1,6 +1,6 @@
 # Terranode website
 
-The Terranode Inc. design and construction website. Eight pages, local photography, SVG brand assets, HTML, CSS and JavaScript. No framework, installed dependencies, build step, AI APIs or ChatGPT runtime are required.
+The Terranode Inc. design and construction website. Nine pages, local photography, SVG brand assets, HTML, CSS and JavaScript. No framework, installed dependencies, build step, AI APIs or ChatGPT runtime are required.
 
 ## Run locally
 
@@ -24,6 +24,7 @@ Open http://127.0.0.1:4317. No dependency installation is needed. The preview se
 | `dist/start.html` | Project enquiry |
 | `dist/change-request.html` | Existing project change request |
 | `dist/trade-partner.html` | Trade partner introduction |
+| `dist/team.html` | Private team workspace sign-in gateway |
 | `dist/styles.css` | Shared design and responsive layout |
 | `dist/script.js` | Navigation, conditional phone requirement and photograph viewer |
 | `dist/assets/` | Local photography and responsive image sizes |
@@ -37,7 +38,7 @@ Open http://127.0.0.1:4317. No dependency installation is needed. The preview se
 
 Publish the **contents of `dist`** to a static web host, or set its publish directory to `dist` with no build command. Navigation and assets use relative URLs. This repository stores the website source; uploading it does not enable web hosting or change terranode.ca DNS.
 
-The three intake pages submit with standard browser forms to the existing published Google Forms. Visitors fill in Terranode-styled fields; Google opens its receipt in a new tab. Each page also links to its original Google Form as a fallback. Do not rename Google questions or replace the forms without checking their `entry.*` field mappings here. Direct email links address **info@terranode.ca**. Automatic enquiry email notifications require separate Google-side activation and are not active merely because this code is uploaded.
+The three intake pages submit with standard browser forms to the existing published Google Forms. The Team login page opens the private Google Workspace app; access checks remain in that server-side app. Visitors fill in Terranode-styled fields; Google opens its receipt in a new tab. Each page also links to its original Google Form as a fallback. Do not rename Google questions or replace the forms without checking their `entry.*` field mappings here. Direct email links address **info@terranode.ca**. Automatic enquiry email notifications require separate Google-side activation and are not active merely because this code is uploaded.
 
 ## Existing checks
 
