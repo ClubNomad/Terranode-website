@@ -1,6 +1,6 @@
 <script>
 
-let data=null,page='contacts',filter='all',query='',modal=null,modalOpener=null,method='manual',draft=null,pending=null,fileData=null,companyEdited=false,flash='',mediaDestination='intake',lastBatch=null,lastProject=null,lastReport=null,selectedMedia=[],ocrApiPromise=null,ocrPreviewUrl='';
+let data=null,page='contacts',filter='all',query='',modal=null,modalOpener=null,method='manual',draft=null,pending=null,fileData=null,companyEdited=false,flash='',mediaDestination='intake',lastBatch=null,lastProject=null,lastReport=null,selectedMedia=[],ocrApiPromise=null,ocrWorkerPromise=null,ocrRecognitionQueue=Promise.resolve(),ocrPreviewUrl='';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const blank=()=>({name:'',company:'',phone:'',email:'',role:'',note:'',projectIds:[],companyProjectIds:[]});
