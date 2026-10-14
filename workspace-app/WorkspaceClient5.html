@@ -31,11 +31,27 @@ function ocrStatusLabel(status){
  if(/recogniz/i.test(status||''))return 'Reading text from the photo…';
  return 'Preparing text recognition…';
 }
+function getBusinessCardWorker(api,onProgress){
+ if(!ocrWorkerPromise){
+  ocrWorkerPromise=api.createWorker('eng',undefined,{workerPath:OCR_WORKER_URL,corePath:OCR_CORE_URL,langPath:OCR_LANG_URL,cachePath:'terranode-contact-ocr-v1',gzip:true,logger:message=>onProgress(ocrStatusLabel(message.status),typeof message.progress==='number'&&/recogniz/i.test(message.status||'')?Math.round(message.progress*100):undefined)}).catch(error=>{ocrWorkerPromise=null;throw error});
+ }
+ return ocrWorkerPromise;
+}
 async function recognizeBusinessCard(file,onProgress){
  onProgress('Loading text recognition…');
  const pair=await Promise.all([loadOCRApi(),prepareOCRImage(file)]),api=pair[0],image=pair[1];
- const worker=await api.createWorker('eng',undefined,{workerPath:OCR_WORKER_URL,corePath:OCR_CORE_URL,langPath:OCR_LANG_URL,cachePath:'terranode-contact-ocr-v1',gzip:true,logger:message=>onProgress(ocrStatusLabel(message.status),typeof message.progress==='number'&&/recogniz/i.test(message.status||'')?Math.round(message.progress*100):undefined)});
- try{const result=await worker.recognize(image);return {text:result.data.text,confidence:result.data.confidence}}finally{await worker.terminate()}
+ const run=async()=>{
+  const worker=await getBusinessCardWorker(api,onProgress);
+  try{const result=await worker.recognize(image);return {text:result.data.text,confidence:result.data.confidence}}
+  catch(error){
+   if(ocrWorkerPromise){const current=await ocrWorkerPromise.catch(()=>null);if(current===worker)ocrWorkerPromise=null;}
+   await worker.terminate().catch(()=>{});
+   throw error;
+  }
+ };
+ const job=ocrRecognitionQueue.then(run,run);
+ ocrRecognitionQueue=job.catch(()=>{});
+ return job;
 }
 
 
