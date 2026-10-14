@@ -32,7 +32,7 @@ activeUser = 'info@terranode.ca';
 assert.doesNotThrow(() => vm.runInContext('checkWebUser_()', context));
 for (const email of ['ms@terranode.ca','dp@terranode.ca','another@terranode.ca','']) {
   activeUser = email;
-  assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\\.ca/);
+  assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\.ca/);
 }
 
 const filterRecords = [
@@ -107,8 +107,8 @@ assert.equal(sentEmails[0].to,'info@terranode.ca','Workspace alerts must go only
 
 for (const email of ['ms@terranode.ca','dp@terranode.ca','another@terranode.ca','']) {
   activeUser=email;
-  assert.throws(() => vm.runInContext('getOperationsState({},0)',context), /limited to info@terranode\\.ca/, 'CRM data endpoint must enforce info-only access');
-  assert.throws(() => vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',updates:{status:'New'}})",context), /limited to info@terranode\\.ca/, 'CRM write endpoint must enforce info-only access');
+  assert.throws(() => vm.runInContext('getOperationsState({},0)',context), /limited to info@terranode\.ca/, 'CRM data endpoint must enforce info-only access');
+  assert.throws(() => vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',updates:{status:'New'}})",context), /limited to info@terranode\.ca/, 'CRM write endpoint must enforce info-only access');
 }
 activeUser='info@terranode.ca';
 const registerRows=[['Record ID','Received','Name','Email','Status','Owner','Next step','Follow-up due'],['ENQ-1',new Date('2026-10-12T14:00:00Z'),'Ava Li','ava@example.test','New','', '', '']];
