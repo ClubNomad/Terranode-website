@@ -33,7 +33,10 @@ assert.doesNotThrow(() => vm.runInContext('checkWebUser_()', context));
 for (const email of ['ms@terranode.ca','dp@terranode.ca','another@terranode.ca','']) {
   activeUser = email;
   assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\.ca/);
+  assert.throws(() => vm.runInContext("include('WorkspaceClient11')", context), /limited to info@terranode\.ca/, 'template helper must not be exposed to non-owner accounts');
 }
+activeUser = '';
+assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\.ca/);
 
 const filterRecords = [
   { type:'Inquiry', id:'ENQ-1', name:'Ava Li', person:'Ava Li', email:'ava@example.test', phone:'416-555-0100', company:'North Build', companyKey:'north build', companyKeys:['north build'], projectLabel:'Maple House', projectText:'Maple House', projectFilterKey:'project-1', projectIds:['project-1'], contactIds:['contact-1'], contactKeys:['id:contact-1','email:ava@example.test','name:ava li'], contactNames:['Ava Li'], contactRoles:['client'], status:'New', owner:'Mara', received:'2026-10-12T14:00:00.000Z', summary:'Kitchen adaptation and reuse' },
