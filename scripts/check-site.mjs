@@ -85,7 +85,10 @@ assert.ok(pages['index.html'].includes('assets/raju-albion-daylight-1600.jpg'), 
 assert.ok(pages['index.html'].includes('Terranode designs, plans and builds.'), 'Immediate design, planning and construction positioning');
 assert.ok(pages['index.html'].includes('Selected completed work') && pages['index.html'].includes('Shown here as prior project experience'), 'Portfolio presented as prior completed work');
 assert.ok(pages['index.html'].includes('Commercial kitchen built for Jay Bhavani Etobicoke'), 'Homepage includes construction evidence');
-assert.ok(!pages['index.html'].includes('Studio detail / Club Nomad'), 'Homepage uses project photography in the closing invitation');
+const closingInvitation = pages['index.html'].match(/<section class="invitation"[\s\S]*?<\/section>/)?.[0] ?? '';
+assert.ok(closingInvitation.includes('assets/jay-etobicoke-1-1600.jpg'), 'Closing invitation uses approved Jay Bhavani Etobicoke project photography');
+assert.ok(closingInvitation.includes('assets/jay-etobicoke-1-800.jpg 800w') && closingInvitation.includes('assets/jay-etobicoke-1-1600.jpg 1600w'), 'Closing invitation offers responsive image sizes');
+assert.match(closingInvitation, /width="1600" height="1067" alt="Jay Bhavani Etobicoke’s dining room[^\"]+" loading="lazy" decoding="async"/, 'Closing invitation image has dimensions, descriptive alt text and lazy loading');
 for (const p of projects) assert.ok(pages[p.key+'.html'].includes('Shown here as prior project experience'), `${p.key}: clear historical attribution`);
 assert.ok(pages['index.html'].includes('id="dipesh-name">Dipesh</h3>') && pages['index.html'].includes('id="manjil-name">Manjil</h3>'), 'Both current people introduced');
 assert.equal((pages['index.html'].match(/class="director-title"/g)||[]).length,2,'Both people identified as Directors');
