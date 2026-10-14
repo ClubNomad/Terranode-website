@@ -1,5 +1,5 @@
-/* Terranode Contacts + Project Media — deploy through the Terranode Workspace owner.
- * Web app deployment: Execute as the owner; allowlist checks run server-side.
+/* Terranode Contacts + Project Media — Workspace-backed private team app.
+  * The app runs as its Workspace owner and checks team access on the server.
  * The website's existing Google Forms and response tabs are left untouched.
  */
 let TN_CONFIG_CACHE_;
@@ -22,7 +22,7 @@ const COMPANY_HEADERS = ['Company key','Company','Project IDs','Updated'];
 
 function checkOwner_() {
   const owner = Session.getEffectiveUser().getEmail().toLowerCase();
-  if (owner !== T.owner) throw new Error('Open this Terranode app from its Workspace owner account.');
+    if (owner !== T.owner) throw new Error('Open this Terranode app from its Workspace owner account.');
 }
 function checkWebUser_() {
   checkOwner_();
@@ -31,7 +31,9 @@ function checkWebUser_() {
 }
 function doGet() {
   checkWebUser_();
-  return HtmlService.createTemplateFromFile('Index').evaluate().setTitle('Terranode Workspace');
+  return HtmlService.createTemplateFromFile('Index').evaluate()
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
+    .setTitle('Terranode Workspace');
 }
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
