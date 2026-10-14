@@ -6,7 +6,7 @@ This folder contains the Google Apps Script project used by the private Contacts
 - `Index.html` is the app shell.
 - `WorkspaceClient1.html` through `WorkspaceClient11.html` are included client-side templates used by the shell.
 
-The server checks the executing account and an exact team allowlist, held in private Apps Script properties, before exposing private data or performing a contact or Drive operation. Do not move those checks into browser code. The app runs as the Workspace owner to write to the Operations Hub and the existing `02 - Projects` Drive folder.
+The server checks the executing account and limits every app request to `info@terranode.ca` before exposing private data or performing a contact or Drive operation. Do not move those checks into browser code. The legacy `admins` script property does not grant app access. The app runs as the Workspace owner to write to the Operations Hub and the existing `02 - Projects` Drive folder.
 
 Contacts are stored in the Operations Hub's **Contacts — Unified** sheet. Original form submissions and imported card files are traceable through **Contact Sources**. Media remains in Google Drive at its selected project folder or the General upload intake. No contact rows, uploaded files, passwords, or access tokens are stored in this source folder.
 
