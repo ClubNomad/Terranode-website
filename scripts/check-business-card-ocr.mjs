@@ -52,4 +52,51 @@ await assert.rejects(vm.runInContext('getBusinessCardWorker(api, () => {})', ret
 assert.equal(await vm.runInContext('getBusinessCardWorker(api, () => {})', retryContext), worker);
 assert.equal(attempts, 2, 'failed worker initialization can be retried');
 
-console.log('PASS: OCR worker initialization is reused, failed initialization retries, and card fields remain reviewable without inferring a role.');
+const chooserMarkup = { innerHTML: '' };
+const applicationRoot = {};
+const topBar = {};
+const focusedSelectors = [];
+const modalPanel = { querySelector: selector => ({ focus: () => focusedSelectors.push(selector) }) };
+const chooserContext = vm.createContext({
+  modal: 'form',
+  method: 'business_card',
+  draft: { name: '', company: '', phone: '', email: '', note: '', role: 'client', projectIds: [], companyProjectIds: [] },
+  data: { projects: [] },
+  fileData: null,
+  esc: value => String(value ?? ''),
+  $: id => id === 'overlay' ? chooserMarkup : applicationRoot,
+  document: {
+    addEventListener: () => {},
+    querySelector: selector => selector === '.top' ? topBar : modalPanel,
+  },
+});
+new vm.Script(readClient('WorkspaceClient4.html'), { filename: 'WorkspaceClient4.html' }).runInContext(chooserContext);
+vm.runInContext('renderModal()', chooserContext);
+const sourceMarkup = chooserMarkup.innerHTML;
+for (const [id, label] of [['cameraChoice', 'Use camera'], ['photosChoice', 'Choose from photos'], ['filesChoice', 'Browse files']]) {
+  assert.match(sourceMarkup, new RegExp(`id="${id}"[^>]*>${label}<`), `business card source choice is available: ${label}`);
+}
+assert.match(sourceMarkup, /role="group" aria-label="Choose a business card photo source"/, 'source choices are grouped for assistive technology');
+assert.deepEqual(focusedSelectors, ['#cameraChoice'], 'the dialog starts on a visible source choice');
+const fileInputs = [...sourceMarkup.matchAll(/<input hidden type="file" id="(source\w+)"([^>]*)>/g)];
+assert.deepEqual(fileInputs.map(([, id]) => id), ['sourceCamera', 'sourcePhotos', 'sourceFiles']);
+for (const [, id, attributes] of fileInputs) {
+  assert.match(attributes, /accept="image\/\*"/);
+  assert.match(attributes, /onchange="chooseSourceFromInput\(this\)"/, `${id} uses the existing review path`);
+}
+assert.match(fileInputs[0][2], /capture="environment"/, 'the camera choice opens the rear camera');
+assert.doesNotMatch(fileInputs[1][2] + fileInputs[2][2], /capture=/, 'photo and file choices do not force the camera');
+const openedSources = [];
+chooserContext.document.getElementById = id => ({ click: () => openedSources.push(id) });
+for (const source of ['Camera', 'Photos', 'Files']) vm.runInContext(`openCardSource('${source}')`, chooserContext);
+assert.deepEqual(openedSources, ['sourceCamera', 'sourcePhotos', 'sourceFiles']);
+const selectedFile = { name: 'card.jpg' };
+const input = { files: [selectedFile], value: 'card.jpg' };
+let receivedFile;
+chooserContext.chooseSource = file => { receivedFile = file; };
+chooserContext.testInput = input;
+vm.runInContext('chooseSourceFromInput(testInput)', chooserContext);
+assert.equal(receivedFile, selectedFile, 'all source choices pass the original file to card review');
+assert.equal(input.value, '', 'the picker resets so the same image can be selected again');
+
+console.log('PASS: OCR reuse and retry work, card fields remain reviewable, and camera, photo, and file choices share the existing review flow.');
