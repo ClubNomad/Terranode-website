@@ -1,0 +1,128 @@
+<script>
+const organizationTerms = [
+  "limited", "ltd", "inc", "incorporated", "llc", "corp", "corporation", "company", "co",
+  "group", "partners", "studio", "design", "construction", "builder", "builders", "architect",
+  "architecture", "engineering", "electric", "electrical", "plumbing", "contractor", "contractors",
+  "interior", "interiors", "realty", "realtor", "properties", "property", "consulting", "consultant",
+  "solutions", "services", "management", "hospital", "clinic", "law", "accounting", "finance",
+  "restaurant", "marketing", "media", "supply", "supplies", "renovation", "renovations", "homes",
+  "developments", "development", "landscaping", "landscape", "manufacturing", "industries",
+  "respiratory", "systems", "medical", "healthcare", "technology", "technologies",
+];
+
+const jobTerms = [
+  "manager", "sales", "owner", "president", "director", "principal", "architect", "designer",
+  "accountant", "consultant", "agent", "broker", "realtor", "engineer", "contractor", "specialist",
+  "coordinator", "administrator", "founder", "chief", "officer", "partner", "representative",
+  "technician", "supervisor", "estimator", "electrician", "plumber", "carpenter", "project",
+  "operations", "marketing", "business development", "customer service", "property manager",
+];
+
+const addressTerms = [
+  "street", "st.", "avenue", "ave.", "road", "rd.", "boulevard", "blvd", "drive", "suite", "unit",
+  "floor", "po box", "p.o. box", "canada", "united states", "ontario", "quebec", "british columbia",
+];
+
+const normalizeLine = (line) => line
+  .replace(/[\u00a0\t]+/g, " ")
+  .replace(/^[\s•·|,;:]+|[\s•·|,;:]+$/g, "")
+  .replace(/\s{2,}/g, " ")
+  .trim();
+
+const hasTerm = (line, terms) => {
+  const lower = line.toLowerCase();
+  return terms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\b)${escaped}(?:$|\\b)`, "i").test(lower);
+  });
+};
+
+const looksLikeAddress = (line) => /\d/.test(line) || hasTerm(line, addressTerms);
+const looksLikeContactDetail = (line) => /@|https?:\/\/|www\.|\b(?:tel|phone|mobile|cell|fax|email|e-mail)\b/i.test(line);
+const looksLikeJobTitle = (line) => hasTerm(line, jobTerms);
+const looksLikeOrganization = (line) => hasTerm(line, organizationTerms);
+const words = (line) => line.match(/[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*/g) || [];
+
+function findEmail(text) {
+  const normalized = text
+    .replace(/\s+([@.])/g, "$1")
+    .replace(/([@.])\s+/g, "$1");
+  return normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+}
+
+function findBestEmail(text, lines) {
+  const normalized = text
+    .replace(/\s+([@.])/g, "$1")
+    .replace(/([@.])\s+/g, "$1");
+  const emails = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
+  const labeled = lines.find((line) => /\b(?:email|e-mail)\b/i.test(line));
+  const labeledEmail = labeled && normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)
+    ?.find((email) => labeled.toLowerCase().replace(/\s+/g, "").includes(email.toLowerCase()));
+  return labeledEmail || emails[0] || "";
+}
+
+function findPhone(text, lines) {
+  const priority = [
+    /\b(?:mobile|cell|direct)\b/i,
+    /\b(?:phone|telephone|tel)\b/i,
+  ];
+  const preferred = priority.map((pattern) => lines.find((line) => pattern.test(line))).find(Boolean);
+  const candidates = preferred ? [preferred, ...lines.filter((line) => line !== preferred)] : lines;
+  for (const line of candidates) {
+    if (/\b(?:fax|toll\s*free)\b/i.test(line)) continue;
+    const matches = line.match(/\+?\d[\d\s().-]{5,}\d(?:\s*(?:ext\.?|x|#)\s*\d{1,6})?/gi) || [];
+    const phone = matches.find((value) => {
+      const count = value.replace(/\D/g, "").length;
+      return count >= 7 && count <= 15;
+    });
+    if (phone) return phone.replace(/\s+/g, " ").trim();
+  }
+  return "";
+}
+
+function companyFromEmail(email, lines) {
+  const host = email.split("@")[1]?.split(".")[0]?.toLowerCase();
+  if (!host || /^(?:gmail|googlemail|outlook|hotmail|yahoo|icloud|me|protonmail)$/i.test(host)) return "";
+  const match = lines.find((line) => {
+    if (looksLikeContactDetail(line) || looksLikeAddress(line) || looksLikeJobTitle(line)) return false;
+    return words(line).some((word) => word.replace(/[^a-z0-9]/gi, "").toLowerCase() === host);
+  });
+  if (match) return match;
+  return host
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function findJobTitle(lines) {
+  const candidate = lines.find((line) => looksLikeJobTitle(line) && !looksLikeContactDetail(line) && !looksLikeAddress(line));
+  return candidate ? `Job title: ${candidate}` : "";
+}
+
+function personNameCandidate(line) {
+  if (!line || looksLikeContactDetail(line) || looksLikeAddress(line) || looksLikeJobTitle(line) || looksLikeOrganization(line)) return false;
+  if (/\d|[@:/\\]/.test(line)) return false;
+  const lineWords = words(line).filter((word) => !/^(?:mr|mrs|ms|miss|dr|prof|cpa|p\.?eng|ing|esq)$/i.test(word));
+  return lineWords.length >= 2 && lineWords.length <= 4;
+}
+
+function organizationCandidate(line) {
+  if (!line || looksLikeContactDetail(line) || looksLikeAddress(line) || looksLikeJobTitle(line)) return false;
+  if (personNameCandidate(line)) return false;
+  const lineWords = words(line);
+  return lineWords.length >= 1 && lineWords.length <= 7;
+}
+
+function normalizePersonName(line) {
+  return line
+    .replace(/^\s*BE\s+(?=[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]+\s+[A-Za-z])/u, "")
+    .replace(/^\s*(?:mr|mrs|ms|miss|dr|prof)\.?\s+/i, "")
+    .replace(/\b(?:cpa|p\.?\s?eng|ing|esq)\b\.?/gi, "")
+    .replace(/[,.\s]+$/g, "")
+    .trim();
+}
+
+/** Extract reviewable suggestions from OCR text; role is intentionally absent. */
+
+</script>

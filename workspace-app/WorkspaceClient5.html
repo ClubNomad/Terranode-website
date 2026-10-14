@@ -1,0 +1,42 @@
+<script>
+function parseVcard(text){const lines=text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/),value=key=>{const line=lines.find(l=>l.split(':')[0].split(';')[0].toUpperCase()===key);return line?line.slice(line.indexOf(':')+1).replace(/\\n/gi,'\n').replace(/\\,/g,','):''};const n=value('N').split(';');return {name:value('FN')||[n[1],n[0]].filter(Boolean).join(' '),company:value('ORG').split(';')[0],phone:value('TEL'),email:value('EMAIL'),note:value('NOTE')}}
+
+const OCR_VERSION='7.0.0';
+const OCR_SCRIPT_URL='https://cdn.jsdelivr.net/npm/tesseract.js@'+OCR_VERSION+'/dist/tesseract.min.js';
+const OCR_WORKER_URL='https://cdn.jsdelivr.net/npm/tesseract.js@'+OCR_VERSION+'/dist/worker.min.js';
+const OCR_CORE_URL='https://cdn.jsdelivr.net/npm/tesseract.js-core@v7.0.0';
+const OCR_LANG_URL='https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int';
+const OCR_SCRIPT_INTEGRITY='sha384-2BQ3U3OdKOb0Uczxqr41I9UvZkzr4V9Hv8uSzMMZAlmhsFClvdZX5wi5fDCzG+tM';
+function loadOCRApi(){
+ if(window.Tesseract)return Promise.resolve(window.Tesseract);
+ if(!ocrApiPromise)ocrApiPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src=OCR_SCRIPT_URL;script.integrity=OCR_SCRIPT_INTEGRITY;script.crossOrigin='anonymous';script.referrerPolicy='no-referrer';
+  script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('The text reader did not start.'));
+  script.onerror=()=>{script.remove();reject(new Error('Could not load text recognition. Check your connection and try again.'));};document.head.appendChild(script);
+ }).catch(error=>{ocrApiPromise=null;throw error});
+ return ocrApiPromise;
+}
+async function prepareOCRImage(file){
+ const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('This browser could not prepare the photo for text recognition.');
+ let width=0,height=0,draw=null,cleanup=null;
+ if('createImageBitmap'in window){try{const bitmap=await createImageBitmap(file);width=bitmap.width;height=bitmap.height;draw=(w,h)=>ctx.drawImage(bitmap,0,0,w,h);cleanup=()=>bitmap.close()}catch{}}
+ if(!draw){const url=URL.createObjectURL(file),img=new Image();try{img.src=url;await img.decode();width=img.naturalWidth;height=img.naturalHeight;draw=(w,h)=>ctx.drawImage(img,0,0,w,h);cleanup=()=>URL.revokeObjectURL(url)}catch{URL.revokeObjectURL(url);throw new Error('Could not read this photo. Try a clear JPG or PNG, or enter the details manually.')}}
+ if(!width||!height||!draw)throw new Error('Could not read this photo. Try a clear JPG or PNG, or enter the details manually.');
+ const scale=Math.min(1,2400/Math.max(width,height));canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));ctx.filter='grayscale(1) contrast(1.25) brightness(1.04)';draw(canvas.width,canvas.height);ctx.filter='none';cleanup&&cleanup();
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not prepare the photo for text recognition.')),'image/jpeg',0.94));
+}
+function ocrStatusLabel(status){
+ if(/download|loading language/i.test(status||''))return 'Loading the English text model…';
+ if(/core|worker|initial/i.test(status||''))return 'Preparing text recognition…';
+ if(/recogniz/i.test(status||''))return 'Reading text from the photo…';
+ return 'Preparing text recognition…';
+}
+async function recognizeBusinessCard(file,onProgress){
+ onProgress('Loading text recognition…');
+ const pair=await Promise.all([loadOCRApi(),prepareOCRImage(file)]),api=pair[0],image=pair[1];
+ const worker=await api.createWorker('eng',undefined,{workerPath:OCR_WORKER_URL,corePath:OCR_CORE_URL,langPath:OCR_LANG_URL,cachePath:'terranode-contact-ocr-v1',gzip:true,logger:message=>onProgress(ocrStatusLabel(message.status),typeof message.progress==='number'&&/recogniz/i.test(message.status||'')?Math.round(message.progress*100):undefined)});
+ try{const result=await worker.recognize(image);return {text:result.data.text,confidence:result.data.confidence}}finally{await worker.terminate()}
+}
+
+
+</script>

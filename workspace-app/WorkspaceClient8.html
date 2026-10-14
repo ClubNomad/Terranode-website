@@ -1,0 +1,27 @@
+<script>
+async function chooseSource(file){
+ if(!file)return;
+ if(file.size>10*1024*1024){$('formFeedback').innerHTML='<div class="error">Choose a file under 10 MB.</div>';return}
+ try{fileData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve({name:file.name,mime:file.type||'application/octet-stream',base64:String(reader.result).split(',')[1]});reader.onerror=reject;reader.readAsDataURL(file)})}
+ catch(e){$('formFeedback').innerHTML='<div class="error">'+esc(e.message||e)+'</div>';return}
+ if(method==='vcard'){const text=await file.text();collectDraft();draft={...draft,...parseVcard(text)};renderModal();$('formFeedback').innerHTML='<div class="notice">Contact card read. Check every field and choose a role.</div>';return}
+ if(method!=='business_card')return;
+ collectDraft();
+ if(ocrPreviewUrl)URL.revokeObjectURL(ocrPreviewUrl);
+ ocrPreviewUrl=URL.createObjectURL(file);
+ $('filePreview').innerHTML='<img class="preview" src="'+esc(ocrPreviewUrl)+'" alt="Business card photo"><div id="ocrStatus" class="muted" aria-live="polite">Loading text recognition…</div>';
+ try{
+  const result=await recognizeBusinessCard(file,(label,percent)=>{const node=$('ocrStatus');if(node)node.textContent=label+(percent===undefined?'':' '+percent+'%')});
+  const suggested=extractContactFields(result.text);
+  ['name','company','phone','email','note'].forEach(key=>{if(suggested[key]&&!String(draft[key]||'').trim())draft[key]=suggested[key]});
+  renderModal();
+  $('filePreview').innerHTML='<img class="preview" src="'+esc(ocrPreviewUrl)+'" alt="Business card photo"><div class="muted">Text recognition finished. The original photo will be saved as the contact source.</div>';
+  $('formFeedback').innerHTML=(suggested.name||suggested.company||suggested.email||suggested.phone)?'<div class="notice">Text read from the photo. Review every field, correct any mistakes, and choose Client, Vendor, or Both before saving.</div>':'<div class="error">No contact details were clear enough to suggest. Enter them below and choose a relationship before saving.</div>';
+ }catch(e){
+  $('filePreview').innerHTML='<img class="preview" src="'+esc(ocrPreviewUrl)+'" alt="Business card photo"><div class="muted">Automatic reading is unavailable. You can still enter the details manually.</div>';
+  $('formFeedback').innerHTML='<div class="error">'+esc(e.message||e)+'</div>';
+ }
+}
+
+
+</script>

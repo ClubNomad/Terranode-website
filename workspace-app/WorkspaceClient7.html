@@ -1,0 +1,38 @@
+<script>
+function extractContactFields(text) {
+  const lines = text.split(/\r?\n/).map(normalizeLine).filter(Boolean);
+  const email = findBestEmail(text, lines);
+  const candidates = lines.map((line, index) => ({ line, index })).filter(({ line }) => personNameCandidate(line));
+  const titleIndex = lines.findIndex((line) => looksLikeJobTitle(line) && !looksLikeAddress(line));
+  const detailIndex = lines.findIndex((line) => /@|\b(?:mobile|cell|direct|phone|telephone|tel)\b|\+?\d[\d\s().-]{5,}\d/i.test(line));
+  let nameIndex = candidates[0]?.index ?? -1;
+  if (candidates.length && titleIndex >= 0) {
+    nameIndex = candidates.sort((a, b) => {
+      const score = ({ index }) => Math.abs(index - titleIndex) + (index > titleIndex ? 2 : 0);
+      return score(a) - score(b);
+    })[0].index;
+  } else if (candidates.length && detailIndex >= 0) {
+    nameIndex = candidates.sort((a, b) => Math.abs(a.index - detailIndex) - Math.abs(b.index - detailIndex))[0].index;
+  }
+  const name = nameIndex >= 0 ? normalizePersonName(lines[nameIndex]) : "";
+  const explicitCompany = lines.find((line) => /^(?:company|organization|organisation)\s*[:\-]/i.test(line));
+  let company = explicitCompany ? explicitCompany.replace(/^(?:company|organization|organisation)\s*[:\-]\s*/i, "") : "";
+  if (!company) company = companyFromEmail(email, lines);
+  if (!company) company = lines.find((line) => looksLikeOrganization(line) && line !== name) || "";
+  if (!company && nameIndex >= 0) {
+    const nearby = [lines[nameIndex - 1], lines[nameIndex + 1]]
+      .filter((line) => line && line !== name && organizationCandidate(line));
+    company = nearby[0] || "";
+  }
+
+  return {
+    name,
+    company,
+    phone: findPhone(text, lines),
+    email: email || findEmail(text),
+    note: findJobTitle(lines),
+  };
+}
+
+
+</script>
