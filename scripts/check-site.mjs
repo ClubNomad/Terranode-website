@@ -37,7 +37,7 @@ for (const [file, html] of Object.entries(pages)) {
     }
     if (url.startsWith('https://')) {
       if (url === canonical) continue;
-      if (file === 'team.html' && url === 'https://script.google.com/a/macros/terranode.ca/s/AKfycbw5YQhIra9TvKaOuU5jkxH4tv2z8rX1DtGeiLezPBn0s1Yu51wCFvBpA0PVeqRQZETO9Q/exec') continue;
+      if (file === 'team.html' && url === 'https://script.google.com/a/macros/terranode.ca/s/AKfycbxLgqbngRo91EQhtS1ykQW-PO4HxRUQpigCRibc_Ze1sRJ5Le24M7vfPXU4AijOfy2h2w/exec') continue;
       assert.ok(url.startsWith('https://docs.google.com/forms/d/e/'), `${file}: unexpected external URL ${url}`);
       continue;
     }

@@ -1,0 +1,5 @@
+<script>
+async function mergePair(i,keepFirst){const p=data.duplicates[i];if(!p||!confirm('Merge these contacts and keep '+(keepFirst?p.first.name:p.second.name)+'?'))return;try{await call('mergeContacts',keepFirst?p.first.id:p.second.id,keepFirst?p.second.id:p.first.id);await refresh();toast('Contacts merged')}catch(e){alert(e.message||e)}}
+refresh();
+
+</script>

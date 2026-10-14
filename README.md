@@ -25,6 +25,7 @@ Open http://127.0.0.1:4317. No dependency installation is needed. The preview se
 | `dist/change-request.html` | Existing project change request |
 | `dist/trade-partner.html` | Trade partner introduction |
 | `dist/team.html` | Private team workspace sign-in gateway |
+| `workspace-app/` | Google Apps Script source for Contacts and Project Media |
 | `dist/styles.css` | Shared design and responsive layout |
 | `dist/script.js` | Navigation, conditional phone requirement and photograph viewer |
 | `dist/assets/` | Local photography and responsive image sizes |
@@ -38,7 +39,15 @@ Open http://127.0.0.1:4317. No dependency installation is needed. The preview se
 
 Publish the **contents of `dist`** to a static web host, or set its publish directory to `dist` with no build command. Navigation and assets use relative URLs. This repository stores the website source; uploading it does not enable web hosting or change terranode.ca DNS.
 
-The three intake pages submit with standard browser forms to the existing published Google Forms. The Team login page opens the private Google Workspace app; access checks remain in that server-side app. Visitors fill in Terranode-styled fields; Google opens its receipt in a new tab. Each page also links to its original Google Form as a fallback. Do not rename Google questions or replace the forms without checking their `entry.*` field mappings here. Direct email links address **info@terranode.ca**. Automatic enquiry email notifications require separate Google-side activation and are not active merely because this code is uploaded.
+The three intake pages submit with standard browser forms to the existing published Google Forms. Form responses continue to the existing Operations Hub and are synced into the unified Contacts tab by the installed Workspace form trigger. Team Login opens the private Terranode Workspace app; server-side checks allow only the approved Terranode accounts. Visitors fill in Terranode-styled fields; Google opens its receipt in a new tab. Each page also links to its original Google Form as a fallback. Do not rename Google questions or replace the forms without checking their `entry.*` field mappings here. Direct email links address **info@terranode.ca**. Automatic enquiry email notifications require separate Google-side activation and are not active merely because this code is uploaded.
+
+## Private workspace data and access
+
+`workspace-app/` is the maintained Google Apps Script source for the private Contacts and Project Media app. The live app executes as the Workspace owner, with the Terranode Workspace audience enabled and an exact server-side allowlist stored in the Apps Script project's private script properties. The unified contact source of truth is the **Contacts — Unified** tab in the Terranode Operations Hub spreadsheet; **Contact Sources** preserves links to original submissions and imports. Project media is stored directly in the existing `02 - Projects` Google Drive folder. Contact records, card photos, and uploaded project media are not committed to this repository.
+
+The app supports phone and computer uploads, batch notes, direct project filing, a general intake folder, and later batch moves. Large originals use Drive's own uploader. Business-card OCR runs in the browser and presents suggested fields for review; the person importing chooses the contact relationship. The team gateway is `https://terranode.ca/team.html`. The Workspace app URL is versioned; changes to its deployment should update both `dist/team.html` and `scripts/check-site.mjs`.
+
+For a phone shortcut, open the team gateway in Safari on iPhone/iPad and use **Share → Add to Home Screen**. On Android, open it in Chrome and use **⋮ → Add to Home screen**.
 
 ## Existing checks
 
