@@ -229,7 +229,8 @@ function matches_(contacts,draft,excludeId) {
 function cleanDraft_(input) {
   const d=input||{};let name=text_(d.name).trim(),company=text_(d.company).trim();
   if(!name||name.length>180)throw new Error('Enter a name of 180 characters or fewer.');
-  const role=['client','vendor','both'].includes(d.role)?d.role:'client';
+  if(!['client','vendor','both'].includes(d.role))throw new Error('Choose Client, Vendor, or Both.');
+  const role=d.role;
   const projectSet=new Set(projects_().map(p=>p.id));
   return {name,company:company.slice(0,180),phone:text_(d.phone).trim().slice(0,80),email:text_(d.email).trim().slice(0,250),role,note:text_(d.note).trim().slice(0,5000),projectIds:uniq_(Array.isArray(d.projectIds)?d.projectIds.map(String).filter(id=>projectSet.has(id)):[]),companyProjectIds:uniq_(Array.isArray(d.companyProjectIds)?d.companyProjectIds.map(String).filter(id=>projectSet.has(id)):[])};
 }

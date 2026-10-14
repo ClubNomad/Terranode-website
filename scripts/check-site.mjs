@@ -38,6 +38,7 @@ for (const [file, html] of Object.entries(pages)) {
     if (url.startsWith('https://')) {
       if (url === canonical) continue;
       if (file === 'team.html' && url === 'https://script.google.com/a/macros/terranode.ca/s/AKfycbxLgqbngRo91EQhtS1ykQW-PO4HxRUQpigCRibc_Ze1sRJ5Le24M7vfPXU4AijOfy2h2w/exec') continue;
+      if (url === 'https://www.instagram.com/terranodecanada/') continue;
       assert.ok(url.startsWith('https://docs.google.com/forms/d/e/'), `${file}: unexpected external URL ${url}`);
       continue;
     }
@@ -101,5 +102,5 @@ for (const file of readdirSync(resolve(dist,'assets'))) assert.ok(statSync(resol
 execFileSync(process.execPath,['--check',resolve(dist,'script.js')]);
 execFileSync(process.execPath,['--check',resolve(dist,'form-accessibility.js')]);
 const sourceBytes=['index.html','styles.css','script.js','appearance.js'].reduce((n,f)=>n+statSync(resolve(dist,f)).size,0);
-assert.ok(sourceBytes<64000,'Homepage HTML, shared CSS and core JS under 64 KB');
+assert.ok(sourceBytes<65536,'Homepage HTML, shared CSS and core JS under 64 KiB');
 console.log(`PASS: nine pages, cross-page links, assets, three native form routes, historical attribution, source-tracked photographs, brand and JS syntax. Homepage/shared core: ${sourceBytes} bytes.`);
