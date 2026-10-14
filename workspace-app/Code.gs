@@ -1,5 +1,5 @@
 /* Terranode Contacts + Project Media — Workspace-backed private team app.
-  * The app runs as its Workspace owner and checks team access on the server.
+  * The app runs as its Workspace owner and restricts all app access to that account.
  * The website's existing Google Forms and response tabs are left untouched.
  */
 let TN_CONFIG_CACHE_;
@@ -9,9 +9,9 @@ function config_() {
   if (!raw) throw new Error('Terranode setup is incomplete. Add the TERRANODE_CONFIG script property.');
   let config;
   try { config = JSON.parse(raw); } catch (_) { throw new Error('The TERRANODE_CONFIG script property is not valid JSON.'); }
-  const required = ['owner','admins','hub','projects','intake','sourceParent','contactSheet','sourceSheet','companySheet','clientResponses','vendorResponses','clientForm','vendorForm'];
+  const required = ['owner','hub','projects','intake','sourceParent','contactSheet','sourceSheet','companySheet','clientResponses','vendorResponses','clientForm','vendorForm'];
   const missing = required.filter(key => config[key] == null || config[key] === '');
-  if (missing.length || !Array.isArray(config.admins) || !config.admins.length) throw new Error('TERRANODE_CONFIG is missing required settings.');
+  if (missing.length) throw new Error('TERRANODE_CONFIG is missing required settings.');
   TN_CONFIG_CACHE_ = config;
   return TN_CONFIG_CACHE_;
 }
@@ -27,7 +27,7 @@ function checkOwner_() {
 function checkWebUser_() {
   checkOwner_();
   const visitor = (Session.getActiveUser().getEmail() || '').toLowerCase();
-  if (!T.admins.includes(visitor)) throw new Error('This private Terranode workspace is limited to approved team accounts.');
+  if (visitor !== T.owner.toLowerCase()) throw new Error('This private Terranode workspace is limited to info@terranode.ca.');
 }
 function doGet() {
   checkWebUser_();
