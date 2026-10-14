@@ -133,5 +133,81 @@ vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',requestId:'re
 assert.equal(fakeRegister.rows[1][4],"'=IMPORTXML(\"https://bad.test\",\"//a\")",'workflow text that resembles a spreadsheet formula is stored as text');
 
 
-console.log('PASS: syntax, info-only access, combined CRM filters, exact relationships, alert dedupe, and mail retry recovery.');
+function makeFormSheet(name,rows,sheetId) {
+  return {
+    name,rows,
+    getName(){return name;},
+    getSheetId(){return sheetId;},
+    getLastRow(){return rows.length;},
+    getLastColumn(){return rows[0].length;},
+    appendRow(values){rows.push(values.slice());},
+    getRange(row,column,numRows=1,numColumns=1) {
+      return {
+        createTextFinder(value){return {matchEntireCell(){return this;},findNext(){for(let i=row-1;i<Math.min(rows.length,row-1+numRows);i++){if(String(rows[i][column-1]||'')===String(value))return {getRow:()=>i+1};}return null;}};},
+        getValues(){return Array.from({length:numRows},(_,r)=>Array.from({length:numColumns},(_,c)=>(rows[row-1+r]||[])[column-1+c]??''));},
+        getValue(){return (rows[row-1]||[])[column-1]??'';},
+        setValue(value){rows[row-1][column-1]=value;return this;},
+        clearContent(){return this.setValue('');},
+      };
+    },
+  };
+}
+const formSpecs=Array.from(vm.runInContext('FORM_RESPONSE_SPECS_',context));
+assert.equal(formSpecs.length,6,'all six linked response tabs have a CRM routing map');
+for (const spec of formSpecs) {
+  const labels=Array.from(new Set(Object.values(spec.fields)));
+  const formHeaders=['Timestamp',...labels];
+  const formValues=[new Date('2026-10-14T15:00:00Z'),...labels.map((_,index)=>'value-'+index)];
+  const registerHeaders=['Record ID','Received',...Object.keys(spec.fields),'Status','Source response'];
+  context.testFormSpec=spec;context.testFormHeaders=formHeaders;context.testFormValues=formValues;context.testRegisterHeaders=registerHeaders;
+  const mapped=Array.from(vm.runInContext('formRegisterValues_(testFormSpec,testRegisterHeaders,testFormHeaders,testFormValues,"FORM-1","google-form:1:2")',context));
+  assert.equal(mapped[0],'FORM-1','form rows receive a stable record ID');
+  assert.equal(mapped[mapped.length-2],'New','new form records enter the CRM as New');
+  assert.equal(mapped[mapped.length-1],'google-form:1:2','the original response is traceable');
+  for (const field of Object.keys(spec.fields)) assert.ok(mapped[registerHeaders.indexOf(field)],spec.sheet+' maps '+field);
+}
+const safeSpec=formSpecs.find(spec=>spec.sheet==='Responses — Enquiries');
+context.testFormSpec=safeSpec;
+context.testFormHeaders=['Timestamp','Your name'];
+context.testFormValues=[new Date('2026-10-14T15:00:00Z'),'=IMPORTXML("https://bad.test","//a")'];
+const safeFormRow=Array.from(vm.runInContext('formRegisterValues_(testFormSpec,["Record ID","Received","Name","Status","Source response"],testFormHeaders,testFormValues,"FORM-2","google-form:1:3")',context));
+assert.equal(safeFormRow[2], "'=IMPORTXML(\"https://bad.test\",\"//a\")", 'public form text is stored as text in CRM registers');
+
+const enquiryHeaders=['Timestamp','What kind of space?','Where is it?','What are you hoping to create or improve?','Your name','Email address','Where are you in planning?','Budget range','When might you start?','How should we reply?','Phone number','Company or organization','Permission to contact you'];
+const enquiryValues=[new Date('2026-10-14T15:01:00Z'),'Studio','Toronto','Reuse an existing space','Ava Li','ava@example.test','Researching','$100k–$250k','Spring 2027','Email','416-555-0101','North Build','Yes'];
+const enquiryResponse=makeFormSheet('Responses — Enquiries',[enquiryHeaders,enquiryValues],770779248);
+const enquiryRegister=makeFormSheet('Enquiries',[['Record ID','Received','Name','Email','Phone','Project type','Location','Project idea','Budget','Timing','Planning stage','Owner','Status','Next step','Follow-up due','Source response']],1428214042);
+const changeHeaders=['Timestamp','Project ID or site address','What would you like to change, and why?','Timing or budget considerations','Your name and organization','Email or phone for follow-up'];
+const changeValues=[new Date('2026-10-14T15:02:00Z'),'Maple House','Add a covered entry','Before winter','Ava Li, North Build','ava@example.test'];
+const changeResponse=makeFormSheet('Responses — Change Requests',[changeHeaders,changeValues],1564596522);
+const changeRegister=makeFormSheet('Change Requests',[['Record ID','Received','Project ID or address','Requestor','Contact','Requested change','Timing or budget','Owner','Status','Decision','Approved amount CAD','Decision evidence','Follow-up due','Source response']],1120917896);
+const formBook={getSheetByName(name){return ({'Enquiries':enquiryRegister,'Change Requests':changeRegister})[name]||null;}};
+context.sheets_=()=>({book:formBook,contacts:{},sources:{},companies:{}});
+context.testActivity=memoryActivity;
+const mailBeforeForms=sentEmails.length;
+const formEvent=sheet=>({source:{getId:()=> 'test-only'},range:{getSheet:()=>sheet,getRow:()=>2}});
+vm.runInContext('handleTerranodeContactForm(testFormEvent)',Object.assign(context,{testFormEvent:formEvent(enquiryResponse)}));
+assert.equal(enquiryRegister.rows.length,2,'new client enquiries are added to the Operations register');
+assert.equal(enquiryRegister.rows[1][2],'Ava Li','the enquiry name is mapped correctly');
+assert.equal(enquiryRegister.rows[1][15],'google-form:770779248:2','the CRM record links to its source response key');
+assert.equal(sentEmails.at(-1).to,'info@terranode.ca','form submission alerts go only to the owner inbox');
+assert.match(sentEmails.at(-1).body,/Ava Li/,'the email includes a useful submission summary');
+const emailsAfterFirstEnquiry=sentEmails.length;
+vm.runInContext('handleTerranodeContactForm(testFormEvent)',context);
+assert.equal(enquiryRegister.rows.length,2,'retrying a form trigger does not duplicate the CRM record');
+assert.equal(sentEmails.length,emailsAfterFirstEnquiry,'a delivered form alert is not sent twice');
+
+failEmail=true;
+context.testFormEvent=formEvent(changeResponse);
+vm.runInContext('handleTerranodeContactForm(testFormEvent)',context);
+assert.equal(changeRegister.rows.length,2,'change requests are added to their matching register');
+assert.equal(memoryActivity.rows.at(-1)[5],'Workspace pending','failed form email remains queued');
+failEmail=false;
+const beforeFormRecovery=sentEmails.length;
+vm.runInContext('handleTerranodeContactForm(testFormEvent)',context);
+assert.equal(changeRegister.rows.length,2,'a mail retry does not duplicate the change request');
+assert.equal(memoryActivity.rows.at(-1)[5],'Sent','a later form alert retry recovers');
+assert.equal(sentEmails.length,beforeFormRecovery+1,'recovery sends one queued form alert');
+
+console.log('PASS: syntax, info-only access, CRM filters and relationships, alert retries, all six form maps, CRM routing, dedupe, and owner-only submission email.');
 

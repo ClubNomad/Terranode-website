@@ -328,9 +328,41 @@ function syncResponse_(sheet,rowNumber,s) {
   return true;
 }
 function handleTerranodeContactForm(e) {
-  checkOwner_();if(!e||!e.range||e.source.getId()!==T.hub)return;
+  checkOwner_();
+  if(!e||!e.range||!e.source||e.source.getId()!==T.hub)return;
+  const sheet=e.range.getSheet(),rowNumber=e.range.getRow(),spec=formResponseSpec_(sheet.getName());
+  if(!spec||rowNumber<2)return;
   const lock=LockService.getScriptLock();lock.waitLock(30000);
-  try {syncResponse_(e.range.getSheet(),e.range.getRow(),sheets_());} finally {lock.releaseLock();}
+  try {
+    const sourceUrl=sheetRowUrl_('https://docs.google.com/spreadsheets/d/'+T.hub+'/edit',sheet,rowNumber);
+    let headers=[],values=[],readError='',record=null;
+    try {
+      const width=sheet.getLastColumn();
+      headers=sheet.getRange(1,1,1,width).getValues()[0].map(text_);
+      values=sheet.getRange(rowNumber,1,1,width).getValues()[0];
+    } catch(error) {readError=error.message;}
+    const failures=[];
+    if(readError)failures.push('Could not read the response row: '+readError);
+    else {
+      try {
+        const workspace=sheets_();
+        if(sheet.getName()===T.clientResponses||sheet.getName()===T.vendorResponses)syncResponse_(sheet,rowNumber,workspace);
+        record=syncOperationFormResponse_(spec,sheet,rowNumber,workspace.book,headers,values);
+      } catch(error) {failures.push(error.message);}
+    }
+    const details=formAlertDetails_(spec,headers,values,sourceUrl);
+    if(failures.length)details.integrationError=failures.join('; ').slice(0,500);
+    const sourceKey='google-form:'+sheet.getSheetId()+':'+rowNumber;
+    enqueueWorkspaceAlert_({
+      key:'workspace:form:'+sheet.getSheetId()+':'+rowNumber,
+      type:spec.alertType,
+      received:values[0] instanceof Date?values[0]:new Date(),
+      recordId:record?record.id:sourceKey,
+      url:record?record.url:sourceUrl,
+      details:details
+    });
+    if(failures.length)console.error('Terranode form response needs CRM follow-up: '+failures.join('; '));
+  } finally {lock.releaseLock();}
 }
 function syncExistingTerranodeContacts() {
   checkWebUser_();const lock=LockService.getScriptLock();lock.waitLock(30000);
@@ -351,6 +383,67 @@ const OPERATIONS_TABLES_ = [
   {type:'Purchase request', sheet:'Purchases', person:'Requested by', project:'Project ID or address', summary:'Item or service', notes:'Reason', company:'Supplier', amount:'Amount CAD', neededBy:'Needed by', status:'Status', owner:'Owner', decisionEvidence:'Approval evidence', editable:{owner:'Owner',status:'Status',decisionEvidence:'Approval evidence'}},
   {type:'Client communication', sheet:'Client Contact', person:'Client contact', actor:'Logged by', project:'Project ID or address', summary:'Conversation', nextStep:'Next action', status:'Status', owner:'Owner', followUp:'Follow-up due', contactMethod:'Contact method', editable:{owner:'Owner',status:'Status',nextStep:'Next action',followUp:'Follow-up due'}}
 ];
+
+const FORM_RESPONSE_SPECS_ = [
+  {sheet:'Responses — Enquiries',register:'Enquiries',formName:'New Client & Project Enquiry',alertType:'Client enquiry submitted',person:'Your name',company:'Company or organization',email:'Email address',phone:'Phone number',project:'Where is it?',summary:'What are you hoping to create or improve?',fields:{'Name':'Your name','Email':'Email address','Phone':'Phone number','Project type':'What kind of space?','Location':'Where is it?','Project idea':'What are you hoping to create or improve?','Budget':'Budget range','Timing':'When might you start?','Planning stage':'Where are you in planning?'}},
+  {sheet:'Responses — Change Requests',register:'Change Requests',formName:'Project Change Request',alertType:'Change request submitted',person:'Your name and organization',project:'Project ID or site address',summary:'What would you like to change, and why?',fields:{'Project ID or address':'Project ID or site address','Requestor':'Your name and organization','Contact':'Email or phone for follow-up','Requested change':'What would you like to change, and why?','Timing or budget':'Timing or budget considerations'}},
+  {sheet:'Responses — Trade Partners',register:'Trade Partners',formName:'Vendor & Trade Partner Registration',alertType:'Trade partner registration submitted',person:'Your name',company:'Company name',email:'Work email',phone:'Business phone',summary:'Your trade or service',fields:{'Company':'Company name','Trade or service':'Your trade or service','Contact name':'Your name','Email':'Work email','Phone':'Business phone','Head office':'Head office','Regions served':'Regions served','Credentials':'Licences, insurance and workers’ compensation','Portfolio':'Website or portfolio','Availability':'Typical project size and availability'}},
+  {sheet:'Responses — Site Logs',register:'Site Logs',formName:'Site Log',alertType:'Site log submitted',person:'Reported by',project:'Project ID or site address',summary:'Work completed',fields:{'Project ID or address':'Project ID or site address','Reporter':'Reported by','Visit date':'Visit date','Work completed':'Work completed','Observations':'Observations and issues','Next actions':'Next actions'}},
+  {sheet:'Responses — Purchases',register:'Purchases',formName:'Purchase Request',alertType:'Purchase request submitted',person:'Requested by',project:'Project ID or site address',company:'Suggested supplier',summary:'Item or service',fields:{'Project ID or site address':'Project ID or site address','Requested by':'Requested by','Item or service':'Item or service','Supplier':'Suggested supplier','Amount CAD':'Estimated amount CAD','Needed by':'Needed by','Reason':'Reason for request'}},
+  {sheet:'Responses — Client Contact',register:'Client Contact',formName:'Client Contact Log',alertType:'Client communication logged',person:'Client contact',project:'Project ID or site address',summary:'Conversation summary',fields:{'Project ID or address':'Project ID or site address','Logged by':'Logged by','Client contact':'Client contact','Contact method':'Contact method','Conversation':'Conversation summary','Next action':'Next action','Follow-up due':'Follow-up due'}}
+];
+function formResponseSpec_(sheetName) { return FORM_RESPONSE_SPECS_.find(function(spec){return spec.sheet===sheetName;})||null; }
+function formRegisterValues_(spec,registerHeaders,formHeaders,formValues,recordId,sourceKey) {
+  const timestampIndex=formHeaders.indexOf('Timestamp'),mapped={
+    'Record ID':recordId,
+    'Received':timestampIndex>=0&&formValues[timestampIndex]?formValues[timestampIndex]:new Date(),
+    'Status':'New',
+    'Source response':sourceKey
+  };
+  Object.keys(spec.fields).forEach(function(target) {
+    const sourceIndex=formHeaders.indexOf(spec.fields[target]);
+    mapped[target]=sourceIndex<0?'':safeCell_(formValues[sourceIndex]);
+  });
+  return registerHeaders.map(function(header){return Object.prototype.hasOwnProperty.call(mapped,header)?mapped[header]:'';});
+}
+function syncOperationFormResponse_(spec,sheet,rowNumber,book,formHeaders,formValues) {
+  const register=book.getSheetByName(spec.register);
+  if(!register)throw new Error('The Operations Hub '+spec.register+' register is missing.');
+  const registerWidth=register.getLastColumn(),registerHeaders=register.getRange(1,1,1,registerWidth).getValues()[0].map(text_);
+  const idColumn=registerHeaders.indexOf('Record ID')+1,sourceColumn=registerHeaders.indexOf('Source response')+1;
+  if(!idColumn||!sourceColumn)throw new Error('The Operations Hub '+spec.register+' register is missing its record ID or source response column.');
+  const sourceKey='google-form:'+sheet.getSheetId()+':'+rowNumber,last=register.getLastRow();
+  if(last>1) {
+    const found=register.getRange(2,sourceColumn,last-1,1).createTextFinder(sourceKey).matchEntireCell(true).findNext();
+    if(found) {
+      const existingRow=found.getRow(),existingId=text_(register.getRange(existingRow,idColumn).getValue())||('FORM-'+sheet.getSheetId()+'-'+rowNumber);
+      return {id:existingId,row:existingRow,url:sheetRowUrl_('https://docs.google.com/spreadsheets/d/'+T.hub+'/edit',register,existingRow),duplicate:true};
+    }
+  }
+  const recordId='FORM-'+sheet.getSheetId()+'-'+rowNumber;
+  const row=formRegisterValues_(spec,registerHeaders,formHeaders,formValues,recordId,sourceKey);
+  register.appendRow(row);
+  const savedRow=register.getLastRow();
+  return {id:recordId,row:savedRow,url:sheetRowUrl_('https://docs.google.com/spreadsheets/d/'+T.hub+'/edit',register,savedRow),duplicate:false};
+}
+function formAlertDetails_(spec,headers,values,sourceUrl) {
+  const read=function(label){return label?formValue_(headers,values,label):'';};
+  const summary=headers.map(function(header,index) {
+    const value=text_(values[index]).trim();
+    return index>0&&value?text_(header)+': '+value:'';
+  }).filter(Boolean).join('\n').slice(0,2500);
+  return {
+    name:read(spec.person),
+    company:read(spec.company),
+    email:read(spec.email),
+    phone:read(spec.phone),
+    project:read(spec.project),
+    source:spec.formName,
+    sourceUrl:sourceUrl,
+    note:read(spec.summary),
+    formSummary:summary
+  };
+}
 
 function normalizeCrm_(value) { return text_(value).trim().toLowerCase().replace(/\s+/g,' '); }
 function isoCrmDate_(value) {
@@ -429,10 +522,11 @@ function deliverWorkspaceAlert_(sheet,row) {
       'Received: ' + (values[1] instanceof Date ? Utilities.formatDate(values[1],Session.getScriptTimeZone(),'yyyy-MM-dd HH:mm z') : text_(values[1])),
       'Record: ' + text_(values[3])
     ];
-    [['Contact',details.name],['Company',details.company],['Email',details.email],['Phone',details.phone],['Relationship',details.role],['Project',details.project],['Source',details.source],['Original file',details.filename],['Files',details.fileSummary],['Updated fields',details.changedFields],['Owner',details.owner],['Status',details.status],['Follow-up due',details.followUp],['Next step',details.nextStep]].forEach(function(pair) {
+    [['Contact',details.name],['Company',details.company],['Email',details.email],['Phone',details.phone],['Relationship',details.role],['Project',details.project],['Source',details.source],['Original file',details.filename],['Files',details.fileSummary],['Updated fields',details.changedFields],['Owner',details.owner],['Status',details.status],['Follow-up due',details.followUp],['Next step',details.nextStep],['CRM sync',details.integrationError]].forEach(function(pair) {
       if (pair[1]) lines.push(pair[0] + ': ' + text_(pair[1]).slice(0,500));
     });
     if (details.note) lines.push('Note: ' + text_(details.note).slice(0,300));
+    if (details.formSummary) lines.push('Submission details:\n' + text_(details.formSummary).slice(0,2000));
     lines.push('', 'Open the secure record: ' + text_(values[4]));
     if (details.sourceUrl) lines.push('Open the original: ' + text_(details.sourceUrl));
     lines.push('', 'Terranode Inc. · Grounded in place. Built to connect.');
