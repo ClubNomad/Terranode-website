@@ -50,6 +50,7 @@ function sheets_() {
 }
 function rows_(sheet) { const n=sheet.getLastRow(); return n<2?[]:sheet.getRange(2,1,n-1,sheet.getLastColumn()).getValues().map((row,i)=>({row:i+2,values:row})); }
 function text_(x) { return x==null?'':String(x); }
+function safeCell_(value) { const text=text_(value); return /^[\s]*[=+@-]/.test(text) ? "'"+text : text; }
 function ids_(x) { try { const v=JSON.parse(text_(x)||'[]'); return Array.isArray(v)?v.map(String):[]; } catch (_) { return []; } }
 function uniq_(a) { return [...new Set(a.filter(Boolean))]; }
 function normalizedEmail_(x) { return text_(x).trim().toLowerCase(); }
@@ -110,7 +111,10 @@ function createProjectFolder(category, name) {
       }
     }
     const folder = parent.createFolder(projectName);
-    return {id:folder.getId(), name:folder.getName(), url:folder.getUrl(), existing:false};
+    CacheService.getScriptCache().remove('workspaceMediaSnapshot:v1');
+    const result={id:folder.getId(), name:folder.getName(), url:folder.getUrl(), existing:false};
+    enqueueWorkspaceAlert_({key:'workspace:project:'+folder.getId(),type:'Project folder created',recordId:folder.getId(),url:folder.getUrl(),details:{project:folder.getName()}});
+    return result;
   } finally { lock.releaseLock(); }
 }
 function createUploadBatch(destinationId, note) {
@@ -122,6 +126,7 @@ function createUploadBatch(destinationId, note) {
   const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmmss');
   const name = stamp + (context ? ' — ' + context : ' — Upload') + ' — ' + Utilities.getUuid().slice(0,6);
   const folder = parent.createFolder(name);
+  CacheService.getScriptCache().remove('workspaceMediaSnapshot:v1');
   if (context) folder.setDescription('Batch note: ' + context);
   return {id:folder.getId(), name, url:folder.getUrl(), destination:project ? project.name : 'Unsorted intake'};
 }
@@ -162,6 +167,7 @@ function uploadMediaFile(form) {
     batchNote ? 'Batch note: ' + batchNote : ''
   ].filter(Boolean).join('\n');
   file.setDescription(metadata);
+  CacheService.getScriptCache().remove('workspaceMediaSnapshot:v1');
   return {duplicate:false,id:file.getId(),name:file.getName(),url:file.getUrl(),size:file.getSize(),mime:file.getMimeType(),uploadedAt,destination:parent.getName()};
 }
 function batchParent_(folder) {
@@ -198,6 +204,7 @@ function moveIntakeBatch(batchId, projectId) {
     const target = DriveApp.getFolderById(project.id), names = target.getFoldersByName(folder.getName());
     if (names.hasNext()) throw new Error('A batch folder with this name already exists in that project. Review it in Drive first.');
     folder.moveTo(target);
+    CacheService.getScriptCache().remove('workspaceMediaSnapshot:v1');
     return {id:folder.getId(), name:folder.getName(), url:folder.getUrl(), destination:project.name};
   } finally { lock.releaseLock(); }
 }
@@ -254,7 +261,10 @@ function saveSourceFile_(input) {
 function saveContact(input) {
   checkWebUser_();const lock=LockService.getScriptLock();lock.waitLock(30000);
   try {
-    const s=sheets_(),all=rows_(s.contacts).map(contactFrom_),d=cleanDraft_(input.draft),existingId=text_(input.id),mergeInto=text_(input.mergeInto);
+    const s=sheets_(),activity=activitySheet_(),submissionKey=text_(input.submissionKey).trim()||Utilities.getUuid(),eventKey='workspace:contact:'+submissionKey;
+    const prior=findActivityRow_(activity,eventKey);
+    if(prior)return {saved:true,id:text_(activity.getRange(prior,4).getValue()),duplicate:true,notification:text_(activity.getRange(prior,6).getValue())};
+    const all=rows_(s.contacts).map(contactFrom_),d=cleanDraft_(input.draft),existingId=text_(input.id),mergeInto=text_(input.mergeInto);
     const matches=matches_(all,d,existingId);
     if(!existingId&&!mergeInto&&!input.keepSeparate&&matches.length)return {possibleMatches:matches.map(c=>({id:c.id,name:c.name,company:c.company,email:c.email,phone:c.phone}))};
     let c=all.find(x=>x.id===(existingId||mergeInto));
@@ -263,25 +273,38 @@ function saveContact(input) {
     if(c&&mergeInto) c={...c,name:c.name||d.name,company:c.company||d.company,phone:c.phone||d.phone,email:c.email||d.email,role:roleUnion_(c.role,d.role),note:uniq_([c.note,d.note]).join('\n'),projectIds:uniq_([...c.projectIds,...d.projectIds]),updated:timestamp};
     else if(c)c={...c,...d,updated:timestamp};
     else c={id:Utilities.getUuid(),...d,created:timestamp,updated:timestamp};
-    if(c.row)s.contacts.getRange(c.row,1,1,CONTACT_HEADERS.length).setValues([contactRow_(c)]);else s.contacts.appendRow(contactRow_(c));
+    let savedRow=c.row;
+    if(savedRow)s.contacts.getRange(savedRow,1,1,CONTACT_HEADERS.length).setValues([contactRow_(c)]);
+    else {s.contacts.appendRow(contactRow_(c));savedRow=s.contacts.getLastRow();}
     if(d.company&&input.updateCompanyProjects)saveCompanyProjects_(s.companies,d.company,d.companyProjectIds);
     const kind=['manual','vcard','business_card'].includes(input.kind)?input.kind:'manual';
+    let sourceFile=null;
     if(!existingId) {
-      const file=saveSourceFile_(input.file);
-      s.sources.appendRow([Utilities.getUuid(),c.id,kind,file?.key||'manual:'+Utilities.getUuid(),file?.url||'',file?.filename||'',text_(input.sourceNote).slice(0,500),timestamp]);
+      sourceFile=saveSourceFile_(input.file);
+      s.sources.appendRow([Utilities.getUuid(),c.id,kind,sourceFile?.key||'manual:'+Utilities.getUuid(),sourceFile?.url||'',sourceFile?.filename||'',text_(input.sourceNote).slice(0,500),timestamp]);
     }
-    return {saved:true,id:c.id};
+    c.row=savedRow;
+    let alert={status:'Workspace pending'};
+    try { alert=enqueueWorkspaceAlert_({key:eventKey,type:existingId?'Contact updated':mergeInto?'Contact linked':'Contact added',recordId:c.id,url:sheetRowUrl_('https://docs.google.com/spreadsheets/d/'+T.hub+'/edit',s.contacts,savedRow),details:contactAlertDetails_(c,kind,sourceFile,projects_())}); }
+    catch(error) { console.error('Contact saved; alert will retry: '+error.message); }
+    return {saved:true,id:c.id,notification:alert.status};
   } finally {lock.releaseLock();}
 }
-function mergeContacts(keepId,removeId) {
+function mergeContacts(keepId,removeId,requestId) {
   checkWebUser_();const lock=LockService.getScriptLock();lock.waitLock(30000);
   try {
-    const s=sheets_(),all=rows_(s.contacts).map(contactFrom_),keep=all.find(x=>x.id===keepId),drop=all.find(x=>x.id===removeId);
+    const s=sheets_(),activity=activitySheet_(),eventKey='workspace:merge:'+(text_(requestId).trim()||Utilities.getUuid());
+    const prior=findActivityRow_(activity,eventKey);
+    if(prior)return {saved:true,id:text_(activity.getRange(prior,4).getValue()),duplicate:true,notification:text_(activity.getRange(prior,6).getValue())};
+    const all=rows_(s.contacts).map(contactFrom_),keep=all.find(x=>x.id===keepId),drop=all.find(x=>x.id===removeId);
     if(!keep||!drop||keep.id===drop.id)throw new Error('Select two existing contacts.');
     const merged={...keep,name:keep.name||drop.name,company:keep.company||drop.company,phone:keep.phone||drop.phone,email:keep.email||drop.email,role:roleUnion_(keep.role,drop.role),note:uniq_([keep.note,drop.note]).join('\n'),projectIds:uniq_([...keep.projectIds,...drop.projectIds]),updated:now_()};
     s.contacts.getRange(keep.row,1,1,CONTACT_HEADERS.length).setValues([contactRow_(merged)]);
     rows_(s.sources).forEach(entry=>{if(text_(entry.values[1])===removeId)s.sources.getRange(entry.row,2).setValue(keepId);});
-    s.contacts.deleteRow(drop.row);return {saved:true,id:keepId};
+    s.contacts.deleteRow(drop.row);
+    const url='https://docs.google.com/spreadsheets/d/'+T.hub+'/edit#gid='+s.contacts.getSheetId()+'&range=A'+keep.row;
+    const alert=enqueueWorkspaceAlert_({key:eventKey,type:'Contact records merged',recordId:keepId,url:url,details:{name:merged.name,company:merged.company,email:merged.email,phone:merged.phone,source:'Duplicate review'}});
+    return {saved:true,id:keepId,notification:alert.status};
   } finally {lock.releaseLock();}
 }
 function formValue_(headers,values,label) {const i=headers.indexOf(label);return i<0?'':text_(values[i]).trim();}
@@ -318,4 +341,441 @@ function installTerranodeContactTrigger() {
   return {triggerInstalled:true,existingRowsSynced:syncExistingTerranodeContacts()};
 }
 
+
+const OPERATIONS_TABLES_ = [
+  {type:'Inquiry', sheet:'Enquiries', person:'Name', email:'Email', phone:'Phone', company:'Company', project:'Location', location:'Location', projectType:'Project type', summary:'Project idea', budget:'Budget', timing:'Timing', planningStage:'Planning stage', status:'Status', owner:'Owner', nextStep:'Next step', followUp:'Follow-up due', source:'Source response', editable:{owner:'Owner',status:'Status',nextStep:'Next step',followUp:'Follow-up due'}},
+  {type:'Change request', sheet:'Change Requests', person:'Requestor', contact:'Contact', project:'Project ID or address', summary:'Requested change', timing:'Timing or budget', status:'Status', owner:'Owner', followUp:'Follow-up due', decision:'Decision', decisionEvidence:'Decision evidence', editable:{owner:'Owner',status:'Status',decision:'Decision',approvedAmount:'Approved amount CAD',decisionEvidence:'Decision evidence',followUp:'Follow-up due'}},
+  {type:'Trade partner', sheet:'Trade Partners', person:'Contact name', email:'Email', phone:'Phone', company:'Company', summary:'Trade or service', timing:'Availability', headOffice:'Head office', regions:'Regions served', credentials:'Credentials', portfolio:'Portfolio', projectSize:'Typical project size and availability', status:'Status', owner:'Owner', notes:'Notes', editable:{owner:'Owner',status:'Status',notes:'Notes'}},
+  {type:'Site log', sheet:'Site Logs', person:'Reporter', project:'Project ID or address', summary:'Work completed', visitDate:'Visit date', notes:'Observations', nextStep:'Next actions', status:'Status', owner:'Owner', followUp:'Follow-up due', editable:{owner:'Owner',status:'Status',followUp:'Follow-up due'}},
+  {type:'Purchase request', sheet:'Purchases', person:'Requested by', project:'Project ID or address', summary:'Item or service', notes:'Reason', company:'Supplier', amount:'Amount CAD', neededBy:'Needed by', status:'Status', owner:'Owner', decisionEvidence:'Approval evidence', editable:{owner:'Owner',status:'Status',decisionEvidence:'Approval evidence'}},
+  {type:'Client communication', sheet:'Client Contact', person:'Client contact', actor:'Logged by', project:'Project ID or address', summary:'Conversation', nextStep:'Next action', status:'Status', owner:'Owner', followUp:'Follow-up due', contactMethod:'Contact method', editable:{owner:'Owner',status:'Status',nextStep:'Next action',followUp:'Follow-up due'}}
+];
+
+function normalizeCrm_(value) { return text_(value).trim().toLowerCase().replace(/\s+/g,' '); }
+function isoCrmDate_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString();
+  if (!value) return '';
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? text_(value) : date.toISOString();
+}
+function headerValue_(headers, values, label) {
+  const index = headers.indexOf(label);
+  return index < 0 ? '' : values[index];
+}
+function sheetRowUrl_(hubUrl, sheet, row) {
+  return hubUrl + '#gid=' + sheet.getSheetId() + '&range=A' + row;
+}
+function parseObject_(value) {
+  try {
+    const parsed = JSON.parse(text_(value) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (_) { return {}; }
+}
+function ensureAlertDetailsColumn_(sheet) {
+  if (sheet && text_(sheet.getRange(1,9).getValue()).trim() !== 'Alert details') sheet.getRange(1,9).setValue('Alert details');
+}
+function activitySheet_() {
+  const sheet = hub_().getSheetByName('Activity');
+  if (!sheet) throw new Error('The Operations Hub Activity tab is missing.');
+  ensureAlertDetailsColumn_(sheet);
+  return sheet;
+}
+function findActivityRow_(sheet, sourceKey) {
+  const last = sheet.getLastRow();
+  if (last < 2) return 0;
+  const found = sheet.getRange(2,1,last-1,1).createTextFinder(sourceKey).matchEntireCell(true).findNext();
+  return found ? found.getRow() : 0;
+}
+function workspaceAlertStatus_(sourceKey) {
+  return /^workspace:/.test(text_(sourceKey));
+}
+function retryableWorkspaceAlert_(sourceKey, status) {
+  return workspaceAlertStatus_(sourceKey) && status === 'Workspace pending';
+}
+function workspaceActivityDetails_(sheet, row) {
+  return parseObject_(sheet.getRange(row,9).getValue());
+}
+function enqueueWorkspaceAlert_(event) {
+  let sheet, row, key = text_(event.key);
+  if (!key || !/^workspace:[a-z0-9:_-]{8,180}$/i.test(key)) throw new Error('The workspace alert key is invalid.');
+  try {
+    sheet = activitySheet_();
+    row = findActivityRow_(sheet,key);
+    if (!row) {
+      const received = event.received instanceof Date ? event.received : new Date();
+      sheet.appendRow([key,received,text_(event.type).slice(0,100),text_(event.recordId).slice(0,200),text_(event.url), 'Workspace pending', '', '', JSON.stringify(event.details || {})]);
+      row = sheet.getLastRow();
+    }
+    deliverWorkspaceAlert_(sheet,row);
+  } catch (error) {
+    console.error('Terranode alert could not be recorded or sent: ' + error.message);
+    if (sheet && row) {
+      sheet.getRange(row,6).setValue('Workspace pending');
+      sheet.getRange(row,8).setValue(text_(error.message).slice(0,500));
+    }
+  }
+  return {status: sheet && row ? text_(sheet.getRange(row,6).getValue()) : 'Workspace pending'};
+}
+function deliverWorkspaceAlert_(sheet,row) {
+  const values = sheet.getRange(row,1,1,9).getValues()[0];
+  if (values[5] === 'Sent') return;
+  sheet.getRange(row,7).setValue(new Date());
+  try {
+    const details = parseObject_(values[8]);
+    const lines = [
+      'A saved item is ready in Terranode Workspace.',
+      'Type: ' + text_(values[2]),
+      'Received: ' + (values[1] instanceof Date ? Utilities.formatDate(values[1],Session.getScriptTimeZone(),'yyyy-MM-dd HH:mm z') : text_(values[1])),
+      'Record: ' + text_(values[3])
+    ];
+    [['Contact',details.name],['Company',details.company],['Email',details.email],['Phone',details.phone],['Relationship',details.role],['Project',details.project],['Source',details.source],['Original file',details.filename],['Files',details.fileSummary],['Updated fields',details.changedFields],['Owner',details.owner],['Status',details.status],['Follow-up due',details.followUp],['Next step',details.nextStep]].forEach(function(pair) {
+      if (pair[1]) lines.push(pair[0] + ': ' + text_(pair[1]).slice(0,500));
+    });
+    if (details.note) lines.push('Note: ' + text_(details.note).slice(0,300));
+    lines.push('', 'Open the secure record: ' + text_(values[4]));
+    if (details.sourceUrl) lines.push('Open the original: ' + text_(details.sourceUrl));
+    lines.push('', 'Terranode Inc. · Grounded in place. Built to connect.');
+    MailApp.sendEmail({to:T.owner,subject:'Terranode · ' + text_(values[2]) + ' · ' + text_(values[3]),body:lines.join('\n'),name:'Terranode Workspace'});
+    sheet.getRange(row,6).setValue('Sent');
+    sheet.getRange(row,8).clearContent();
+  } catch (error) {
+    sheet.getRange(row,6).setValue('Workspace pending');
+    sheet.getRange(row,8).setValue(text_(error.message).slice(0,500));
+    console.error('Terranode alert is queued for retry: ' + error.message);
+  }
+}
+function contactAlertDetails_(contact,kind,file,projects) {
+  return {
+    name:contact.name, company:contact.company, email:contact.email, phone:contact.phone, role:contact.role,
+    project:(projects || []).filter(function(project){return (contact.projectIds || []).includes(project.id);}).map(function(project){return project.name;}).join(', '),
+    source:kind === 'business_card' ? 'Business card photo' : kind === 'vcard' ? 'Contact card import' : contact.id ? 'Team contact entry' : 'Team contact entry',
+    filename:file && file.filename || '', sourceUrl:file && file.url || ''
+  };
+}
+function findUnseenMediaFiles_(folder,seen) {
+  const files = folder.getFiles(), found = [];
+  while (files.hasNext()) {
+    const file = files.next();
+    if (!seen.has(file.getId())) found.push({id:file.getId(),name:file.getName(),size:file.getSize(),created:file.getDateCreated()});
+  }
+  return found;
+}
+function mediaBatchFolders_() {
+  const cutover = Number(PropertiesService.getScriptProperties().getProperty('workspaceMediaCutover') || 0);
+  if (!cutover) return [];
+  const roots = [{id:T.intake,name:'General upload',projectId:''}].concat(projects_().map(function(project){return {id:project.id,name:project.name,projectId:project.id};}));
+  const batches = [], pattern = /^\d{4}-\d{2}-\d{2} \d{6} — .+ — [a-f0-9]{6}$/i;
+  roots.forEach(function(root) {
+    const rootFolder = DriveApp.getFolderById(root.id), folders = rootFolder.getFolders();
+    while (folders.hasNext()) {
+      const folder = folders.next();
+      if (!pattern.test(folder.getName()) || folder.getDateCreated().getTime() < cutover) continue;
+      batches.push({folder,root});
+    }
+  });
+  return batches;
+}
+function mediaActivityFileIds_(sheet) {
+  const seen = new Set(), last = sheet.getLastRow();
+  if (last < 2) return seen;
+  const rows = sheet.getRange(2,1,last-1,9).getValues();
+  rows.forEach(function(row) {
+    if (!/^workspace:media:/.test(text_(row[0]))) return;
+    const details = parseObject_(row[8]);
+    (Array.isArray(details.fileIds) ? details.fileIds : []).forEach(function(id){if(id)seen.add(String(id));});
+  });
+  return seen;
+}
+function mediaFileKey_(fileIds) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,fileIds.slice().sort().join('|'));
+  return digest.map(function(byte){return ('0'+((byte+256)%256).toString(16)).slice(-2);}).join('');
+}
+function mediaFolderRecord_(folder,root,hub,companies,contacts) {
+  const files=folder.getFiles(), names=[];
+  let count=0,bytes=0,latest=folder.getDateCreated();
+  while(files.hasNext()) {
+    const file=files.next(); count++; bytes+=file.getSize();
+    if(names.length<20) names.push({name:file.getName(),url:file.getUrl(),size:file.getSize(),mime:file.getMimeType(),created:isoCrmDate_(file.getDateCreated())});
+    if(file.getDateCreated().getTime()>latest.getTime()) latest=file.getDateCreated();
+  }
+  if (!count) return null;
+  const companyKeys=Object.keys(companies).filter(function(key){return root.projectId && companies[key].projectIds.includes(root.projectId);});
+  const companyNames=companyKeys.map(function(key){return companies[key].name;});
+  const related=contacts.filter(function(contact){return root.projectId && ((contact.projectIds||[]).includes(root.projectId)||(contact.companyProjectIds||[]).includes(root.projectId));});
+  const note=text_(folder.getDescription()).replace(/^Batch note:\s*/,'');
+  return {type:'Media batch',id:folder.getId(),name:folder.getName(),received:isoCrmDate_(latest),person:'',email:'',phone:'',company:companyNames.join(', '),companyKey:companyNames.length===1?companyKey_(companyNames[0]):'',companyNames:companyNames,companyKeys:companyKeys,projectText:root.name,projectId:root.projectId,projectIds:root.projectId?[root.projectId]:[],projectLabel:root.name,projectFilterKey:root.projectId||'text:'+normalizeCrm_(root.name),summary:(count+' original file'+(count===1?'':'s')+' · '+(bytes/1048576).toFixed(1)+' MB')+(note?' · '+note:''),status:'Uploaded',owner:'',followUp:'',recordUrl:folder.getUrl(),sourceUrl:'',contactIds:related.map(function(c){return c.id;}),contactNames:related.map(function(c){return c.name;}),contactKeys:related.map(function(c){return 'id:'+c.id;}),contactRoles:uniq_(related.map(function(c){return c.role;})),files:names,fileCount:count,bytes:bytes};
+}
+function operationRecord_(spec,sheet,row,headers,values,hubUrl) {
+  const read=function(key){return headerValue_(headers,values,spec[key]||'');};
+  const id=text_(headerValue_(headers,values,'Record ID')).trim();
+  if (!id) return null;
+  const rawContact=text_(read('contact')).trim(), parsedEmail=rawContact.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const record={
+    type:spec.type,id:id,name:text_(read('person')).trim()||id,person:text_(read('person')).trim(),email:text_(read('email')).trim()||(parsedEmail?parsedEmail[0]:''),phone:text_(read('phone')).trim()||(!parsedEmail?rawContact:''),company:text_(read('company')).trim(),projectText:text_(read('project')).trim(),summary:text_(read('summary')).trim(),status:text_(read('status')).trim(),owner:text_(read('owner')).trim(),nextStep:text_(read('nextStep')).trim(),followUp:isoCrmDate_(read('followUp')),notes:text_(read('notes')).trim(),timing:text_(read('timing')).trim(),decision:text_(read('decision')).trim(),decisionEvidence:text_(read('decisionEvidence')).trim(),approvedAmount:text_(read('approvedAmount')).trim(),amount:text_(read('amount')).trim(),neededBy:isoCrmDate_(read('neededBy')),visitDate:isoCrmDate_(read('visitDate')),projectType:text_(read('projectType')).trim(),location:text_(read('location')).trim(),budget:text_(read('budget')).trim(),planningStage:text_(read('planningStage')).trim(),headOffice:text_(read('headOffice')).trim(),regions:text_(read('regions')).trim(),credentials:text_(read('credentials')).trim(),portfolio:text_(read('portfolio')).trim(),projectSize:text_(read('projectSize')).trim(),contactMethod:text_(read('contactMethod')).trim(),actor:text_(read('actor')).trim(),received:isoCrmDate_(read('received') || values[1]),recordUrl:sheetRowUrl_(hubUrl,sheet,row),sourceUrl:/^https:\/\/docs\.google\.com\//i.test(text_(read('source')).trim())?text_(read('source')).trim():'',contactIds:[],contactNames:[],contactKeys:[],contactRoles:[],projectIds:[],projectId:'',projectLabel:'',projectFilterKey:'',editable:{}
+  };
+  Object.keys(spec.editable).forEach(function(key) {
+    const label=spec.editable[key], column=headers.indexOf(label);
+    if (column >= 0) record.editable[key]={label:label,value:isoCrmDate_(values[column]),type:key==='followUp'?'date':key==='notes'||key==='decisionEvidence'||key==='nextStep'?'textarea':'text'};
+  });
+  return record;
+}
+function associateOperationRecords_(records,contacts,projects,companies) {
+  const projectById={}, projectByName={},contactsById={},contactsByEmail={},contactsByPhone={},contactsByName={},contactsByCompany={},contactsByProject={};
+  const addIndex=function(index,key,contact){if(!key)return;(index[key]||(index[key]=[])).push(contact);};
+  projects.forEach(function(project){projectById[project.id]=project;projectByName[normalizeCrm_(project.name)]=project;});
+  contacts.forEach(function(contact){
+    contactsById[contact.id]=contact;
+    addIndex(contactsByEmail,normalizedEmail_(contact.email),contact);
+    const phone=normalizedPhone_(contact.phone);if(phone.length>=7)addIndex(contactsByPhone,phone,contact);
+    addIndex(contactsByName,normalizeCrm_(contact.name),contact);
+    addIndex(contactsByCompany,companyKey_(contact.company),contact);
+    uniq_([].concat(contact.projectIds||[],contact.companyProjectIds||[])).forEach(function(id){addIndex(contactsByProject,id,contact);});
+  });
+  records.forEach(function(record) {
+    let matched=[];
+    if (record.type==='Contact') matched=contactsById[record.id]?[contactsById[record.id]]:[];
+    else if (record.type==='Company') matched=contactsByCompany[record.companyKey]||[];
+    else if (record.type==='Project' && record.projectId) matched=contactsByProject[record.projectId]||[];
+    else if (record.email || normalizedPhone_(record.phone).length>=7) {
+      matched=uniq_([].concat(contactsByEmail[normalizedEmail_(record.email)]||[],contactsByPhone[normalizedPhone_(record.phone)]||[]));
+    } else matched=contactsByName[normalizeCrm_(record.person)]||[];
+    record.contactIds=uniq_(matched.map(function(c){return c.id;}));
+    record.contactNames=uniq_(matched.map(function(c){return c.name;}));
+    record.contactRoles=uniq_(matched.map(function(c){return c.role;}));
+    record.contactKeys=uniq_(record.contactIds.map(function(id){return 'id:'+id;})
+      .concat(record.email?['email:'+normalizeCrm_(record.email)]:[])
+      .concat(record.phone?['phone:'+normalizedPhone_(record.phone)]:[])
+      .concat(record.person?['name:'+normalizeCrm_(record.person)]:[]));
+    if (!record.company && matched.length===1) record.company=matched[0].company;
+    const projectCompanies=record.type==='Project'&&record.projectIds&&record.projectIds.length?Object.keys(companies).filter(function(key){return record.projectIds.some(function(id){return companies[key].projectIds.includes(id);});}):[];
+    record.companyNames=uniq_([].concat(record.company?[record.company]:[],projectCompanies.map(function(key){return companies[key].name;})));
+    record.companyKeys=uniq_([].concat(record.companyKey?[record.companyKey]:[],projectCompanies));
+    if (!record.company && record.companyNames.length===1) record.company=record.companyNames[0];
+    if (!record.companyKey && record.companyNames.length===1) record.companyKey=companyKey_(record.companyNames[0]);
+    if (record.type==='Contact') {
+      const contact=matched[0];
+      record.projectIds=uniq_([].concat(contact.projectIds||[],contact.companyProjectIds||[]));
+    } else if (record.type==='Company') {
+      record.projectIds=record.projectIds||[];
+    } else if (record.projectId) {
+      record.projectIds=[record.projectId];
+    } else if (record.projectText) {
+      const project=projectById[record.projectText]||projectByName[normalizeCrm_(record.projectText)];
+      if (project) {record.projectId=project.id;record.projectIds=[project.id];}
+    }
+    record.projectIds=uniq_(record.projectIds||[]);
+    record.projectLabel=record.projectId && projectById[record.projectId] ? projectById[record.projectId].name : (record.projectText||'');
+    record.projectFilterKey=record.projectId||('text:'+normalizeCrm_(record.projectLabel));
+  });
+  return records;
+}
+function operationRecords_(book,hubUrl,contacts,projects,companies,contactSources) {
+  const records=[],sourcesByContact={};
+  contactSources.forEach(function(source){(sourcesByContact[source.contactId]||(sourcesByContact[source.contactId]=[])).push(source);});
+  OPERATIONS_TABLES_.forEach(function(spec) {
+    const sheet=book.getSheetByName(spec.sheet);
+    if (!sheet || sheet.getLastRow()<2) return;
+    const width=sheet.getLastColumn(),headers=sheet.getRange(1,1,1,width).getValues()[0].map(text_);
+    sheet.getRange(2,1,sheet.getLastRow()-1,width).getValues().forEach(function(values,index) {
+      const record=operationRecord_(spec,sheet,index+2,headers,values,hubUrl);
+      if (record) records.push(record);
+    });
+  });
+  contacts.forEach(function(contact) {
+    const sources=sourcesByContact[contact.id]||[];
+    records.push({type:'Contact',id:contact.id,name:contact.name,person:contact.name,email:contact.email,phone:contact.phone,company:contact.company,companyKey:companyKey_(contact.company),projectText:'',projectId:'',projectIds:uniq_([].concat(contact.projectIds||[],contact.companyProjectIds||[])),projectLabel:'',projectFilterKey:'',summary:contact.note,status:'Saved',owner:'',followUp:'',received:isoCrmDate_(contact.updated||contact.created),recordUrl:hubUrl+'#gid='+book.getSheetByName(T.contactSheet).getSheetId()+'&range=A'+contact.row,sourceUrl:'',contactIds:[contact.id],contactNames:[contact.name],contactKeys:['id:'+contact.id].concat(contact.email?['email:'+normalizeCrm_(contact.email)]:[]).concat(contact.phone?['phone:'+normalizedPhone_(contact.phone)]:[]).concat(['name:'+normalizeCrm_(contact.name)]),contactRoles:[contact.role],sources:sources,editable:{}});
+  });
+  const companySheet=book.getSheetByName(T.companySheet);
+  if (companySheet && companySheet.getLastRow()>1) {
+    const headers=companySheet.getRange(1,1,1,companySheet.getLastColumn()).getValues()[0].map(text_);
+    companySheet.getRange(2,1,companySheet.getLastRow()-1,companySheet.getLastColumn()).getValues().forEach(function(values,index) {
+      const key=text_(headerValue_(headers,values,'Company key'));
+      const name=text_(headerValue_(headers,values,'Company'));
+      if (!name) return;
+      const ids=ids_(headerValue_(headers,values,'Project IDs'));
+      const sheetUrl=sheetRowUrl_(hubUrl,companySheet,index+2);
+      records.push({type:'Company',id:key||companyKey_(name),name:name,person:'',email:'',phone:'',company:name,companyKey:companyKey_(name),projectText:ids.map(function(id){return (projects.find(function(p){return p.id===id;})||{}).name||id;}).join(', '),projectIds:ids,projectId:'',projectLabel:'',projectFilterKey:'',summary:ids.length+' linked project'+(ids.length===1?'':'s'),status:'',owner:'',followUp:'',received:isoCrmDate_(headerValue_(headers,values,'Updated')),recordUrl:sheetUrl,sourceUrl:'',contactIds:[],contactNames:[],contactKeys:[],contactRoles:[],editable:{}});
+    });
+  }
+  projects.forEach(function(project) {
+    records.push({type:'Project',id:project.id,name:project.name,person:'',email:'',phone:'',company:'',companyKey:'',projectText:project.name,projectId:project.id,projectIds:[project.id],projectLabel:project.name,projectFilterKey:project.id,summary:project.group+' project folder',status:'',owner:'',followUp:'',received:'',recordUrl:project.url,sourceUrl:'',contactIds:[],contactNames:[],contactKeys:[],contactRoles:[],editable:{}});
+  });
+  return associateOperationRecords_(records,contacts,projects,companies);
+}
+function closedCrmStatus_(status) {
+  return /^(closed|complete|completed|declined|rejected|cancelled|canceled|not proceeding|lost|withdrawn|resolved)$/i.test(text_(status).trim());
+}
+function filterOperationRecords_(records,filters) {
+  const f=filters||{},query=normalizeCrm_(f.query),terms=query.split(' ').filter(Boolean);
+  return records.filter(function(record) {
+    if (f.type && record.type!==f.type) return false;
+    if (f.project && record.projectFilterKey!==f.project && !record.projectIds.includes(f.project)) return false;
+    if (f.company && !(record.companyKeys||[record.companyKey]).includes(f.company)) return false;
+    if (f.contact && !record.contactIds.includes(f.contact) && !record.contactKeys.includes(f.contact)) return false;
+    if (f.relationship && !record.contactRoles.includes(f.relationship)) return false;
+    if (f.status && normalizeCrm_(record.status)!==normalizeCrm_(f.status)) return false;
+    if (f.owner && normalizeCrm_(record.owner)!==normalizeCrm_(f.owner)) return false;
+    const received=(record.received||'').slice(0,10);
+    if (f.from && (!received || received<f.from)) return false;
+    if (f.to && (!received || received>f.to)) return false;
+    if (terms.length) {
+      const searchable=normalizeCrm_([record.type,record.id,record.name,record.person,record.email,record.phone,record.company,record.projectLabel,record.projectText,record.summary,record.status,record.owner,record.nextStep,record.notes,record.timing,record.decision,record.contactNames.join(' ')].join(' '));
+      if (!terms.every(function(term){return searchable.includes(term);})) return false;
+    }
+    return true;
+  });
+}
+function operationFilterOptions_(records,contacts,projects) {
+  const contactsById={};contacts.forEach(function(contact){contactsById[contact.id]=contact;});
+  const unique=function(items) {const seen=new Map();items.filter(Boolean).forEach(function(item){if(!seen.has(item.value))seen.set(item.value,item);});return Array.from(seen.values()).sort(function(a,b){return a.label.localeCompare(b.label);});};
+  const companyOptions=unique(records.reduce(function(out,r){return out.concat(r.companyNames&&r.companyNames.length?r.companyNames.map(function(name){return {value:companyKey_(name),label:name};}):r.company?[{value:r.companyKey,label:r.company}]:[]);},[]));
+  const projectOptions=unique(records.filter(function(r){return r.projectLabel;}).map(function(r){return {value:r.projectFilterKey,label:r.projectLabel};}));
+  const contactOptions=unique(records.filter(function(r){return r.person;}).map(function(r){const match=(r.contactIds||[]).map(function(id){return contactsById[id];}).find(Boolean);return {value:match?match.id:'name:'+normalizeCrm_(r.person),label:match?match.name:r.person};}));
+  return {types:unique(records.map(function(r){return {value:r.type,label:r.type};})),projects:projectOptions,companies:companyOptions,contacts:contactOptions,relationships:[{value:'client',label:'Client'},{value:'vendor',label:'Vendor'},{value:'both',label:'Client + vendor'}],statuses:unique(records.filter(function(r){return r.status;}).map(function(r){return {value:r.status,label:r.status};})),owners:unique(records.filter(function(r){return r.owner;}).map(function(r){return {value:r.owner,label:r.owner};}))};
+}
+function operationsMetrics_(records,activity) {
+  const intakeTypes=['Inquiry','Change request','Trade partner','Site log','Purchase request','Client communication'];
+  const today=Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'yyyy-MM-dd');
+  return {
+    newSubmissions:records.filter(function(r){return intakeTypes.includes(r.type)&&normalizeCrm_(r.status)==='new';}).length,
+    openInquiries:records.filter(function(r){return r.type==='Inquiry'&&!closedCrmStatus_(r.status);}).length,
+    openChanges:records.filter(function(r){return r.type==='Change request'&&!closedCrmStatus_(r.status);}).length,
+    followUpsDue:records.filter(function(r){return r.followUp&&(r.followUp.slice(0,10)<=today)&&!closedCrmStatus_(r.status);}).length,
+    alertIssues:(activity||[]).filter(function(a){return a.notification==='Pending'||a.notification==='Workspace pending';}).length
+  };
+}
+function activityRecords_(sheet,hubUrl) {
+  if (!sheet || sheet.getLastRow()<2) return [];
+  const width=Math.max(8,Math.min(9,sheet.getLastColumn()));
+  return sheet.getRange(2,1,sheet.getLastRow()-1,width).getValues().map(function(values,index) {
+    const details=parseObject_(values[8]);
+    const url=text_(values[4]);
+    return {key:text_(values[0]),received:isoCrmDate_(values[1]),type:text_(values[2]),recordId:text_(values[3]),url:/^https:\/\/(docs|drive)\.google\.com\//i.test(url)?url:'',notification:text_(values[5]),lastAttempt:isoCrmDate_(values[6]),error:text_(values[7]),details:details};
+  }).sort(function(a,b){return (b.received||'').localeCompare(a.received||'');});
+}
+function mediaBatchRecords_(projects,contacts,companies,hub) {
+  const cache=CacheService.getScriptCache(),cacheKey='workspaceMediaSnapshot:v1',cached=cache.get(cacheKey);
+  if(cached){try{return JSON.parse(cached);}catch(_) {cache.remove(cacheKey);}}
+  const records=[];
+  const roots=[{id:T.intake,name:'General upload',projectId:''}].concat(projects.map(function(p){return {id:p.id,name:p.name,projectId:p.id};}));
+  const pattern=/^\d{4}-\d{2}-\d{2} \d{6} — .+ — [a-f0-9]{6}$/i;
+  roots.forEach(function(root) {
+    const parent=DriveApp.getFolderById(root.id),folders=parent.getFolders();
+    while(folders.hasNext()) {
+      const folder=folders.next();
+      if(!pattern.test(folder.getName()))continue;
+      const record=mediaFolderRecord_(folder,root,hub,companies,contacts);
+      if(record)records.push(record);
+    }
+  });
+  try {const encoded=JSON.stringify(records);if(encoded.length<95000)cache.put(cacheKey,encoded,90);}catch(_) {}
+  return records;
+}
+function getOperationsState(filters,offset) {
+  checkWebUser_();
+  const sheets=sheets_(),book=sheets.book,hubUrl='https://docs.google.com/spreadsheets/d/'+T.hub+'/edit';
+  const projects=projects_(),companies=companyProjects_(sheets.companies),contacts=rows_(sheets.contacts).map(contactFrom_);
+  const sourceRows=rows_(sheets.sources).map(sourceFrom_),sourcesByContact={};
+  sourceRows.forEach(function(source){(sourcesByContact[source.contactId]||(sourcesByContact[source.contactId]=[])).push(source);});
+  contacts.forEach(function(contact){contact.sources=sourcesByContact[contact.id]||[];contact.companyProjectIds=companies[companyKey_(contact.company)]?companies[companyKey_(contact.company)].projectIds:[];});
+  const mediaRecords=mediaBatchRecords_(projects,contacts,companies,book),records=operationRecords_(book,hubUrl,contacts,projects,companies,sourceRows).concat(mediaRecords);
+  const activitySheet=activitySheet_(),activity=activityRecords_(activitySheet,hubUrl),filtered=filterOperationRecords_(records,filters||{});
+  const start=Math.max(0,Math.min(2000,Number(offset)||0)),pageSize=75;
+  return {records:filtered.slice(start,start+pageSize),recordCount:filtered.length,offset:start,hasMore:start+pageSize<filtered.length,summary:operationsMetrics_(filtered,activity),options:operationFilterOptions_(records,contacts,projects),activity:activity.slice(0,12),mediaDirectory:mediaRecords.map(function(r){return {id:r.id,name:r.name,projectIds:r.projectIds,summary:r.summary,recordUrl:r.recordUrl};}).slice(0,200),projectDirectory:projects.map(function(p){return {id:p.id,name:p.name,group:p.group,url:p.url};}),hubUrl:hubUrl,projectsUrl:DriveApp.getFolderById(T.projects).getUrl(),updatedAt:now_()};
+}
+function installWorkspaceCrmMaintenance() {
+  checkWebUser_();
+  const props=PropertiesService.getScriptProperties();
+  if(!props.getProperty('workspaceMediaCutover'))props.setProperty('workspaceMediaCutover',String(Date.now()));
+  const triggers=ScriptApp.getProjectTriggers().filter(function(trigger){return trigger.getHandlerFunction()==='maintainWorkspaceAlerts';});
+  if(triggers.length>1)triggers.slice(1).forEach(function(trigger){ScriptApp.deleteTrigger(trigger);});
+  if(!triggers.length)ScriptApp.newTrigger('maintainWorkspaceAlerts').timeBased().everyMinutes(10).create();
+  return {triggerInstalled:true,mediaCutover:props.getProperty('workspaceMediaCutover')};
+}
+function maintainWorkspaceAlerts() {
+  checkOwner_();
+  const lock=LockService.getScriptLock();
+  if(!lock.tryLock(1000))return;
+  try {
+    const sheet=activitySheet_(),seen=mediaActivityFileIds_(sheet),now=Date.now();
+    mediaBatchFolders_().forEach(function(batch) {
+      try {
+        if(batch.folder.getLastUpdated().getTime()>now-120000)return;
+        const files=findUnseenMediaFiles_(batch.folder,seen);
+        if(!files.length)return;
+        enqueueMediaAlert_(batch.folder,batch.root,files,seen);
+      } catch(error) {console.error('Media alert scan skipped '+batch.folder.getName()+': '+error.message);}
+    });
+    let attempts=0;
+    if(sheet.getLastRow()>1) {
+      const rows=sheet.getRange(2,1,sheet.getLastRow()-1,6).getValues();
+      rows.forEach(function(values,index){if(attempts<20&&retryableWorkspaceAlert_(values[0],values[5])){attempts++;deliverWorkspaceAlert_(sheet,index+2);}});
+    }
+  } finally {lock.releaseLock();}
+}
+function enqueueMediaAlert_(folder,root,files,seen) {
+  const ids=files.map(function(file){return file.id;}).filter(function(id){return !seen.has(id);});
+  if(!ids.length)return {status:'Sent',newFiles:0};
+  const key='workspace:media:'+mediaFileKey_(ids),parentName=root.name;
+  const bytes=files.filter(function(file){return ids.includes(file.id);}).reduce(function(total,file){return total+file.size;},0);
+  const size=(bytes/1048576).toFixed(1)+' MB';
+  const result=enqueueWorkspaceAlert_({key:key,type:'Project media upload',recordId:folder.getId(),url:folder.getUrl(),details:{project:parentName,fileSummary:ids.length+' original file'+(ids.length===1?'':'s')+' · '+size,filename:folder.getName(),fileIds:ids}});
+  ids.forEach(function(id){seen.add(id);});
+  CacheService.getScriptCache().remove('workspaceMediaSnapshot:v1');
+  return result;
+}
+function notifyMediaUploadBatch(batchId) {
+  checkWebUser_();
+  const folder=DriveApp.getFolderById(text_(batchId)),parent=batchParent_(folder),project=projects_().find(function(p){return p.id===parent.getId();});
+  const root={id:parent.getId(),name:project?project.name:'General upload',projectId:project?project.id:''};
+  const sheet=activitySheet_(),seen=mediaActivityFileIds_(sheet),files=findUnseenMediaFiles_(folder,seen);
+  if(!files.length)return {status:'Sent',newFiles:0};
+  const result=enqueueMediaAlert_(folder,root,files,seen);
+  return {status:result.status,newFiles:files.length};
+}
+function updateOperationsRecord(input) {
+  checkWebUser_();
+  const request=input||{},spec=OPERATIONS_TABLES_.find(function(item){return item.type===text_(request.type);});
+  if(!spec)throw new Error('This record type does not have editable workflow fields.');
+  const id=text_(request.id).trim(),requestId=text_(request.requestId).trim()||Utilities.getUuid();
+  if(!id)throw new Error('Choose a record to update.');
+  const key='workspace:record:'+requestId;
+  const updates=request.updates||{},allowed=spec.editable;
+  Object.keys(updates).forEach(function(field){if(!Object.prototype.hasOwnProperty.call(allowed,field))throw new Error('That field cannot be changed here.');});
+  if(!Object.keys(updates).length)throw new Error('Enter at least one update.');
+  const book=hub_(),lock=LockService.getScriptLock();lock.waitLock(30000);
+  try {
+    const activity=activitySheet_(),existing=findActivityRow_(activity,key);
+    if(existing)return {saved:true,notification:text_(activity.getRange(existing,6).getValue())};
+    const sheet=book.getSheetByName(spec.sheet);
+    if(!sheet)throw new Error('The Operations Hub register is missing.');
+    const width=sheet.getLastColumn(),headers=sheet.getRange(1,1,1,width).getValues()[0].map(text_),last=sheet.getLastRow();
+    if(last<2)throw new Error('That record no longer exists. Refresh and try again.');
+    const data=sheet.getRange(2,1,last-1,width).getValues(),index=data.findIndex(function(row){return text_(row[0])===id;});
+    if(index<0)throw new Error('That record no longer exists. Refresh and try again.');
+    const row=index+2,changed=[],details={changedFields:[]};
+    Object.keys(updates).forEach(function(field) {
+      const label=allowed[field],column=headers.indexOf(label),raw=text_(updates[field]).trim();
+      if(column<0)throw new Error('The '+label+' field is missing from the Hub register.');
+      if(raw.length>2000)throw new Error(label+' must be 2,000 characters or fewer.');
+      let value=raw;
+      if(field==='followUp') {
+        if(raw&&!/^\d{4}-\d{2}-\d{2}$/.test(raw))throw new Error('Enter the follow-up date as YYYY-MM-DD.');
+        if(raw) {
+          const parts=raw.split('-').map(Number),date=new Date(parts[0],parts[1]-1,parts[2]);
+          if(date.getFullYear()!==parts[0]||date.getMonth()!==parts[1]-1||date.getDate()!==parts[2])throw new Error('Enter a valid follow-up date.');
+          value=date;
+        } else value='';
+      } else value=safeCell_(raw);
+      sheet.getRange(row,column+1).setValue(value);
+      changed.push(label+': '+(raw||'cleared'));
+      details[field]=raw.slice(0,400);
+      details.changedFields.push(label);
+    });
+    SpreadsheetApp.flush();
+    const recordUrl=sheetRowUrl_('https://docs.google.com/spreadsheets/d/'+T.hub+'/edit',sheet,row);
+    const result=enqueueWorkspaceAlert_({key:key,type:'CRM record updated',recordId:id,url:recordUrl,details:details});
+    return {saved:true,notification:result.status,changed:changed};
+  } finally {lock.releaseLock();}
+}
 
