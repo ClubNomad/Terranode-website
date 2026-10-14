@@ -1,42 +1,46 @@
 <!doctype html>
 <html lang="en">
   <head>
-      <base target="_top">
-          <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-                  <meta name="color-scheme" content="light">
-                      <meta name="theme-color" content="#26352F">
-                          <meta name="description" content="Terranode's private team workspace for contacts and project media.">
-                              <title>Terranode | Team workspace</title>
-                                  <?!= include('WorkspaceStyles') ?>
-                                    </head>
-                                      <body>
-                                          <header class="top">
-                                                <a class="brand-lockup" href="https://terranode.ca/" aria-label="Terranode home"><img src="https://terranode.ca/terranode-logo-dark.svg" alt="Terranode — Design + Construction" width="960" height="190" fetchpriority="high"></a>
-                                                      <div class="workspace-head">
-                                                              <span class="workspace-label">PRIVATE TEAM WORKSPACE</span>
-                                                                      <nav aria-label="Workspace navigation">
-                                                                                <button id="contactsNav" type="button" class="on" aria-pressed="true" onclick="setPage('contacts')">Contacts</button>
-                                                                                          <button id="mediaNav" type="button" aria-pressed="false" onclick="setPage('media')">Project media</button>
-                                                                                                  </nav>
-                                                                                                        </div>
-                                                                                                            </header>
-                                                                                                                <main id="app">
-                                                                                                                      <div class="empty loading" role="status">
-                                                                                                                              <span class="loading-indicator" aria-hidden="true"></span>
-                                                                                                                                      Loading your team workspace…
-                                                                                                                                            </div>
-                                                                                                                                                </main>
-                                                                                                                                                    <div id="overlay"></div>
-                                                                                                                                                        <?!= include('WorkspaceClient1') ?>
-                                                                                                                                                            <?!= include('WorkspaceClient2') ?>
-                                                                                                                                                                <?!= include('WorkspaceClient3') ?>
-                                                                                                                                                                    <?!= include('WorkspaceClient4') ?>
-                                                                                                                                                                        <?!= include('WorkspaceClient5') ?>
-                                                                                                                                                                            <?!= include('WorkspaceClient6') ?>
-                                                                                                                                                                                <?!= include('WorkspaceClient7') ?>
-                                                                                                                                                                                    <?!= include('WorkspaceClient8') ?>
-                                                                                                                                                                                        <?!= include('WorkspaceClient9') ?>
-                                                                                                                                                                                            <?!= include('WorkspaceClient10') ?>
-                                                                                                                                                                                              </body>
-                                                                                                                                                                                              </html>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#26352F">
+    <meta name="description" content="Terranode's private team workspace for contacts, project media, and Operations Hub records.">
+    <title>Terranode | Team workspace</title>
+    <?!= include('WorkspaceStyles') ?>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand-lockup" href="https://terranode.ca/" aria-label="Terranode home">
+        <img src="https://terranode.ca/terranode-logo-dark.svg" alt="Terranode — Design + Construction" width="960" height="190" fetchpriority="high">
+      </a>
+      <div class="workspace-head">
+        <span class="workspace-label">PRIVATE TEAM WORKSPACE</span>
+        <nav aria-label="Workspace navigation">
+          <button id="contactsNav" type="button" class="on" aria-pressed="true" onclick="setPage('contacts')">Contacts</button>
+          <button id="mediaNav" type="button" aria-pressed="false" onclick="setPage('media')">Project media</button>
+          <button id="operationsNav" type="button" aria-pressed="false" onclick="setPage('operations')">Operations</button>
+        </nav>
+      </div>
+    </header>
+    <main id="app">
+      <div class="empty loading" role="status">
+        <span class="loading-indicator" aria-hidden="true"></span>
+        Loading your team workspace…
+      </div>
+    </main>
+    <div id="overlay"></div>
+    <?!= include('WorkspaceClient1') ?>
+    <?!= include('WorkspaceClient2') ?>
+    <?!= include('WorkspaceClient3') ?>
+    <?!= include('WorkspaceClient4') ?>
+    <?!= include('WorkspaceClient5') ?>
+    <?!= include('WorkspaceClient6') ?>
+    <?!= include('WorkspaceClient7') ?>
+    <?!= include('WorkspaceClient8') ?>
+    <?!= include('WorkspaceClient9') ?>
+    <?!= include('WorkspaceClient10') ?>
+    <?!= include('WorkspaceClient11') ?>
+  </body>
+</html>
