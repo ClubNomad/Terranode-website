@@ -8,7 +8,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const app = resolve(root, 'workspace-app');
 const config = {
   owner: 'info@terranode.ca',
-  admins: ['info@terranode.ca', 'ms@terranode.ca', 'dp@terranode.ca'],
   ...Object.fromEntries(['hub','projects','intake','sourceParent','contactSheet','sourceSheet','companySheet','clientResponses','vendorResponses','clientForm','vendorForm'].map(key => [key, 'test-only'])),
 };
 let activeUser = 'info@terranode.ca';
@@ -29,14 +28,15 @@ vm.runInContext('projects_ = () => []', context);
 assert.throws(() => vm.runInContext("cleanDraft_({name:'A',role:''})", context), /Choose Client, Vendor, or Both/);
 assert.equal(vm.runInContext("cleanDraft_({name:'A',role:'vendor'}).role", context), 'vendor');
 assert.equal(vm.runInContext("cleanDraft_({name:'A',role:'both'}).role", context), 'both');
-for (const email of config.admins) {
+activeUser = 'info@terranode.ca';
+assert.doesNotThrow(() => vm.runInContext('checkWebUser_()', context));
+for (const email of ['ms@terranode.ca','dp@terranode.ca','another@terranode.ca','']) {
   activeUser = email;
-  assert.doesNotThrow(() => vm.runInContext('checkWebUser_()', context));
+  assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\.ca/);
+  assert.throws(() => vm.runInContext("include('WorkspaceClient11')", context), /limited to info@terranode\.ca/, 'template helper must not be exposed to non-owner accounts');
 }
-activeUser = 'another@terranode.ca';
-assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to approved team accounts/);
 activeUser = '';
-assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to approved team accounts/);
+assert.throws(() => vm.runInContext('checkWebUser_()', context), /limited to info@terranode\.ca/);
 
 const filterRecords = [
   { type:'Inquiry', id:'ENQ-1', name:'Ava Li', person:'Ava Li', email:'ava@example.test', phone:'416-555-0100', company:'North Build', companyKey:'north build', companyKeys:['north build'], projectLabel:'Maple House', projectText:'Maple House', projectFilterKey:'project-1', projectIds:['project-1'], contactIds:['contact-1'], contactKeys:['id:contact-1','email:ava@example.test','name:ava li'], contactNames:['Ava Li'], contactRoles:['client'], status:'New', owner:'Mara', received:'2026-10-12T14:00:00.000Z', summary:'Kitchen adaptation and reuse' },
@@ -108,9 +108,11 @@ vm.runInContext("enqueueWorkspaceAlert_({key:'workspace:contact:request-12345678
 assert.equal(sentEmails.length,1,'a completed alert must not send again');
 assert.equal(sentEmails[0].to,'info@terranode.ca','Workspace alerts must go only to the approved internal inbox');
 
-activeUser='another@terranode.ca';
-assert.throws(() => vm.runInContext('getOperationsState({},0)',context), /limited to approved team accounts/, 'CRM data endpoint must enforce the server allowlist');
-assert.throws(() => vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',updates:{status:'New'}})",context), /limited to approved team accounts/, 'CRM write endpoint must enforce the server allowlist');
+for (const email of ['ms@terranode.ca','dp@terranode.ca','another@terranode.ca','']) {
+  activeUser=email;
+  assert.throws(() => vm.runInContext('getOperationsState({},0)',context), /limited to info@terranode\.ca/, 'CRM data endpoint must enforce info-only access');
+  assert.throws(() => vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',updates:{status:'New'}})",context), /limited to info@terranode\.ca/, 'CRM write endpoint must enforce info-only access');
+}
 activeUser='info@terranode.ca';
 const registerRows=[['Record ID','Received','Name','Email','Status','Owner','Next step','Follow-up due'],['ENQ-1',new Date('2026-10-12T14:00:00Z'),'Ava Li','ava@example.test','New','', '', '']];
 const responseRows=[['Timestamp','Name'],['Original response','Ava Li']];
@@ -131,5 +133,5 @@ vm.runInContext("updateOperationsRecord({type:'Inquiry',id:'ENQ-1',requestId:'re
 assert.equal(fakeRegister.rows[1][4],"'=IMPORTXML(\"https://bad.test\",\"//a\")",'workflow text that resembles a spreadsheet formula is stored as text');
 
 
-console.log('PASS: syntax, team allowlist, combined CRM filters, exact relationships, alert dedupe, and mail retry recovery.');
+console.log('PASS: syntax, info-only access, combined CRM filters, exact relationships, alert dedupe, and mail retry recovery.');
 
