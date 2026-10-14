@@ -166,8 +166,16 @@ try {
           if (r < minimum) failures.push({ element: `${foreground} on ${background}`, ratio: +r.toFixed(2), minimum });
         }
         probe.remove();
+        const caption = document.querySelector('.hero-image figcaption');
+        if (caption) {
+          const rgba = parse(getComputedStyle(caption).backgroundColor);
+          const worstCase = rgba.slice(0, 3).map(channel => channel * rgba[3] + 255 * (1 - rgba[3]));
+          const r = ratio(parse(getComputedStyle(caption).color), worstCase);
+          if (r < 4.5) failures.push({ element: 'hero caption over a white photo', ratio: +r.toFixed(2), minimum: 4.5 });
+        }
         for (const el of document.querySelectorAll('body *')) {
           if (!el.checkVisibility() || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) || ['SCRIPT', 'OPTION', 'STYLE'].includes(el.tagName)) continue;
+          if (el.closest('.hero-image figcaption')) continue; // Checked against the brightest possible photo pixel above.
           let current = el, background;
           while (current) {
             const cs = getComputedStyle(current);
@@ -191,8 +199,9 @@ try {
         // Native invalid-form handling: nothing is submitted.
         await page.locator('button[type="submit"]').click();
         assert.equal(await page.locator('.field :user-invalid').count() > 0, true);
-        const focused = await page.evaluate(() => ({ tag: document.activeElement.tagName, outline: getComputedStyle(document.activeElement).outlineStyle, invalid: !document.activeElement.validity.valid }));
-        assert.equal(focused.invalid, true);
+        await page.waitForFunction(() => document.activeElement?.classList.contains('form-error-summary'));
+        const focused = await page.evaluate(() => ({ heading: document.activeElement.querySelector('h2')?.textContent, outline: getComputedStyle(document.activeElement).outlineStyle }));
+        assert.ok(focused.heading?.startsWith('Please check'));
         assert.notEqual(focused.outline, 'none');
         if (file === 'start.html') await screenshot(page, `form-errors-${theme}-${width}`);
       }
